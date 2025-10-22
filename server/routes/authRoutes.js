@@ -1,26 +1,23 @@
+// server/routes/authRoutes.js
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
 const router = express.Router();
 
-// ✅ REGISTER route
+/* ============================
+   REGISTER USER (default: user)
+=============================== */
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
-    // Validate fields
-    if (!name || !email || !password) {
+    if (!name || !email || !password)
       return res.status(400).json({ message: 'All fields are required' });
-    }
 
-    // Check if user exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser)
       return res.status(400).json({ message: 'Email already registered' });
-    }
 
-    // Let Mongoose pre-save middleware hash the password automatically
     const user = new User({ name, email, password });
     await user.save();
 
@@ -30,6 +27,7 @@ router.post('/register', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -38,34 +36,63 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ✅ LOGIN route
+/* ============================
+   PERMANENT ADMIN CREATION
+   (for dev & testing)
+=============================== */
+router.post('/create-admin', async (req, res) => {
+  try {
+    const { name, email, password, secret } = req.body;
+
+    if (secret !== 'yourDevSecretHere')
+      return res.status(403).json({ message: 'Invalid admin creation secret' });
+
+    const existingAdmin = await User.findOne({ email });
+    if (existingAdmin)
+      return res.status(400).json({ message: 'Admin with this email already exists' });
+
+    const admin = new User({
+      name,
+      email,
+      password,
+      role: 'admin',
+    });
+
+    await admin.save();
+
+    res.status(201).json({
+      message: 'Admin registered successfully',
+      user: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+  } catch (error) {
+    console.error('Admin Registration Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* ============================
+   LOGIN
+=============================== */
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Validate
-    if (!email || !password) {
+    if (!email || !password)
       return res.status(400).json({ message: 'All fields are required' });
-    }
 
-    // Check if user exists
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
+    if (!user) return res.status(400).json({ message: 'Invalid email or password' });
 
-    // Compare passwords
     const isMatch = await user.matchPassword(password);
-    console.log('Password match:', isMatch);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
 
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' });
-    }
-
-    // Generate token
     const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET || 'fallbacksecret',
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -75,6 +102,7 @@ router.post('/login', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
       token,
     });
@@ -84,32 +112,19 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ✅ Middleware to verify token
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
+/* ============================
+   PROFILE (Protected)
+=============================== */
+router.get('/profile', async (req, res) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallbacksecret');
-    req.user = decoded; // attach decoded user info to request
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-};
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer '))
+      return res.status(401).json({ message: 'No token provided' });
 
-// ✅ PROFILE route (protected)
-router.get('/profile', verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.status(200).json({
       message: 'Profile fetched successfully',

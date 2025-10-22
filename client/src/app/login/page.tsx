@@ -1,83 +1,62 @@
 'use client';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
+  const router = useRouter();
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
     try {
       const res = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
       const data = await res.json();
 
-      if (!res.ok) {
-        setError(data.message || 'Login failed');
-        setLoading(false);
-        return;
+      if (res.ok) {
+        login(data.user, data.token);
+        router.push('/profile');
+      } else {
+        alert(data.message || 'Login failed');
       }
-
-      // Save token and user (you can just save token)
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      setLoading(false);
-      router.push('/profile'); // redirect to profile page
-    } catch (err) {
-      setError('Network error');
-      setLoading(false);
+    } catch (error) {
+      alert('Server error');
     }
-  }
+  };
 
   return (
-    <main style={{ padding: 24, fontFamily: 'Arial' }}>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit} style={{ maxWidth: 420 }}>
-        <label>
-          Email
-          <input
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            type="email"
-            required
-            style={{ width: '100%', padding: 8, margin: '8px 0' }}
-          />
-        </label>
-
-        <label>
-          Password
-          <input
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            type="password"
-            required
-            style={{ width: '100%', padding: 8, margin: '8px 0' }}
-          />
-        </label>
-
-        <button type="submit" disabled={loading} style={{ padding: '8px 16px' }}>
-          {loading ? 'Signing in...' : 'Sign in'}
+    <div className="flex items-center justify-center h-screen">
+      <form onSubmit={handleLogin} className="bg-white p-6 rounded shadow-md w-80">
+        <h2 className="text-xl font-bold mb-4 text-center">Login</h2>
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full border mb-2 p-2 rounded"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border mb-2 p-2 rounded"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+        >
+          Login
         </button>
-
-        {error && <p style={{ color: 'red' }}>{error}</p>}
       </form>
-      <p style={{ marginTop: 16 }}>
-        Test credentials (example): <br />
-        <code>testuser@example.com / mypassword123</code>
-      </p>
-    </main>
+    </div>
   );
 }

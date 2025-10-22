@@ -1,37 +1,31 @@
+// server/routes/productRoutes.js
 import express from 'express';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import Product from '../models/Product.js';
 
 const router = express.Router();
 
-// ✅ Public route — view products
-router.get('/', (req, res) => {
-  const products = [
-    { id: 1, name: 'T-shirt', price: 1200 },
-    { id: 2, name: 'Shoes', price: 3500 },
-    { id: 3, name: 'Jacket', price: 5400 },
-  ];
-
-  res.json({
+// 🛍️ Get all products (public)
+router.get('/', async (req, res) => {
+  const products = await Product.find();
+  res.status(200).json({
     message: '🛍️ Public Products List',
     products,
   });
 });
 
-// 🔐 Protected route — placing an order (requires login)
-router.post('/order', protect, (req, res) => {
-  const user = req.user;
-  const { productId, quantity } = req.body;
-
-  if (!productId || !quantity) {
-    return res.status(400).json({ message: 'Product ID and quantity required' });
+// 🛒 Create new product (admin only)
+router.post('/', protect, adminOnly, async (req, res) => {
+  try {
+    const newProduct = new Product(req.body);
+    await newProduct.save();
+    res.status(201).json({
+      message: 'Product created successfully',
+      product: newProduct,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating product', error });
   }
-
-  // Dummy response — this will later save to a real Order model
-  res.json({
-    message: '✅ Order placed successfully',
-    user: user.email,
-    orderDetails: { productId, quantity },
-  });
 });
 
 export default router;
