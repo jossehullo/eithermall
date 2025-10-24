@@ -1,12 +1,13 @@
 // server/server.js
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
 import mongoose from 'mongoose';
+import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 
 dotenv.config();
+
 const app = express();
 
 // Middleware
@@ -17,14 +18,22 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => res.send('Eithermall API is running...'));
+// Default route
+app.get('/', (req, res) => {
+  res.send('Eithermall API is running...');
+});
 
-// MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
+// Connect to MongoDB and start server
+const MONGO = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/eithermall';
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+mongoose
+  .connect(MONGO)
+  .then(() => {
+    console.log('MongoDB Connected:', MONGO.split('/').pop());
+    app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+  })
+  .catch(err => {
+    console.error('MongoDB Connection Error:', err);
+    process.exit(1);
+  });

@@ -1,0 +1,35 @@
+.admin-container {
+  display: flex;
+  height: 100vh;
+}
+
+.admin-sidebar {
+  width: 220px;
+  background: #1c1c28;
+  padding: 20px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-right: 2px solid #6a00ff;
+}
+
+.admin-sidebar a {
+  padding: 10px 12px;
+  border-radius: 4px;
+  display: block;
+  transition: 0.3s ease;
+  text-decoration: none;
+  color: #ddd;
+}
+
+.admin-sidebar a.active,
+.admin-sidebar a:hover {
+  background: #6a00ff;
+  color: #fff;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 25px;
+}

@@ -1,58 +1,83 @@
 'use client';
-import { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import axios from 'axios';
 
-interface AuthContextType {
+type User = {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+};
+
+type AuthContextType = {
   user: User | null;
   token: string | null;
-  login: (user: User, token: string) => void;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-}
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
+    try {
+      const savedToken =
+        typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const savedUser =
+        typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+      if (savedToken) setToken(savedToken);
+      if (savedUser) setUser(JSON.parse(savedUser));
+    } catch (err) {
+      console.warn('Auth load error', err);
     }
   }, []);
 
-  const login = (userData: User, userToken: string) => {
-    setUser(userData);
-    setToken(userToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', userToken);
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const { data } = await axios.post('http://localhost:5000/api/auth/login', {
+        email,
+        password,
+      });
+      if (data?.token) {
+        setToken(data.token);
+        setUser(data.user);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      }
+    } catch (err: any) {
+      throw err?.response?.data || { message: 'Login failed' };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 };

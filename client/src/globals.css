@@ -1,0 +1,59 @@
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* Dark mode color variables */
+html.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ✅ Neon Glow Effect */
+.neon-glow {
+  box-shadow:
+    0 0 10px #a20aff,
+    0 0 25px #6a00ff,
+    0 0 50px #4000c7;
+}
+
+/* ✅ Global Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
