@@ -1,5 +1,5 @@
 'use client';
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/navigation/BackButton';
 import { useAuth } from '../../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';

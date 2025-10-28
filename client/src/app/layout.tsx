@@ -1,16 +1,19 @@
-// client/src/app/layout.tsx
-import '../globals.css'; // Adjusted path from app/ to src/
-import { AuthProvider } from '../context/AuthContext'; // relative path from app/ to context/
+import type { Metadata } from 'next';
+import './globals.css';
+import { Inter } from 'next/font/google';
+import { AuthProvider } from '../context/AuthContext';
 
-export const metadata = {
-  title: 'Eithermall',
-  description: 'E-commerce platform',
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'EitherMall',
+  description: 'Premium E-commerce Experience',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

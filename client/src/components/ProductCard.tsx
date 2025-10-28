@@ -1,64 +1,66 @@
+// client/src/components/ProductCard.tsx
+'use client';
+
 import React from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 type Product = {
-  _id?: string;
+  _id: string;
   name: string;
-  price: number;
-  image?: string;
   description?: string;
+  price?: number;
+  image?: string;
+  stock?: number;
 };
 
 export default function ProductCard({ product }: { product: Product }) {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handleClick = () => {
+    if (!user) {
+      // redirect to login and keep intended redirect
+      router.push(`/login?redirect=/products/${product._id}`);
+      return;
+    }
+    // logged in => go to product details page
+    router.push(`/products/${product._id}`);
+  };
+
   return (
-    <div
-      style={{
-        border: '1px solid #e6e6e6',
-        padding: 12,
-        borderRadius: 8,
-        width: 260,
-        transition: 'transform .14s ease, box-shadow .14s ease',
-      }}
-      className="product-card"
+    <article
+      className="rounded-xl overflow-hidden shadow-lg bg-white hover:shadow-2xl transition cursor-pointer"
+      onClick={handleClick}
+      role="button"
     >
-      <div
-        style={{
-          height: 160,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
-      >
+      <div className="h-48 bg-gray-100 flex items-center justify-center">
         <img
-          src={product.image || '/placeholder.png'}
+          src={product.image || '/images/placeholder.png'}
           alt={product.name}
-          style={{ width: '100%', objectFit: 'cover' }}
+          className="object-contain max-h-48 w-full"
         />
       </div>
-      <h3 style={{ margin: '8px 0' }}>{product.name}</h3>
-      <p style={{ margin: 0, color: '#666' }}>{product.description ?? ''}</p>
-      <div
-        style={{
-          marginTop: 8,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <strong style={{ color: '#072146' }}>Ksh {product.price}</strong>
-        <button
-          style={{
-            background: '#FFA500',
-            border: 'none',
-            padding: '6px 10px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontWeight: 700,
-          }}
-        >
-          Buy
-        </button>
+
+      <div className="p-4 space-y-2">
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">{product.name}</h3>
+        <p className="text-sm text-[var(--muted)]">KES {product.price ?? '—'}</p>
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-xs text-[var(--muted)]">Stock: {product.stock ?? 0}</span>
+          <button
+            onClick={e => {
+              e.stopPropagation();
+              // if not logged in, redirect
+              if (!user) return router.push(`/login?redirect=/products/${product._id}`);
+              // add to cart placeholder
+              alert('Add to cart (to implement)');
+            }}
+            className="px-3 py-1 rounded-md text-sm brand-btn"
+          >
+            Add
+          </button>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }

@@ -1,62 +1,74 @@
+// client/src/app/page.tsx
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Navbar from '@/components/navigation/Navbar';
+import ProductCard from '@/components/ProductCard';
+import BackButton from '@/components/navigation/BackButton';
 
-export default function ProductsPage() {
-  const [products] = useState([
-    {
-      id: 1,
-      name: 'Wireless Headphones',
-      price: 45,
-      image: '/images/headphones.jpg',
-      description: 'High quality audio for music lovers',
-    },
-    {
-      id: 2,
-      name: 'Smart Watch',
-      price: 75,
-      image: '/images/watch.jpg',
-      description: 'Stay connected on the go',
-    },
-    {
-      id: 3,
-      name: 'Bluetooth Speaker',
-      price: 60,
-      image: '/images/speaker.jpg',
-      description: 'Feel the bass anywhere',
-    },
-  ]);
+type Product = {
+  _id: string;
+  name: string;
+  description?: string;
+  price?: number;
+  image?: string;
+  stock?: number;
+};
+
+export default function HomePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+
+  useEffect(() => {
+    async function fetchProducts() {
+      setLoading(true);
+      try {
+        const res = await fetch(`${apiBase}/products`);
+        if (!res.ok) throw new Error('Failed to fetch products');
+        const data = await res.json();
+        // API can return either { products: [...] } or an array
+        setProducts(Array.isArray(data) ? data : (data.products ?? []));
+      } catch (err: any) {
+        setError(err.message || 'Unable to load products');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProducts();
+  }, []);
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-blue-900 mb-6">Explore Products</h1>
+    <div className="min-h-screen bg-[var(--background)]">
+      <Navbar />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {products.map(product => (
-          <div
-            key={product.id}
-            className="bg-white rounded-xl shadow-xl hover:shadow-2xl transition group"
-          >
-            <Link href={`/product/${product.id}`}>
-              <img
-                src={product.image}
-                alt={product.name}
-                className="rounded-t-xl w-full h-48 object-cover group-hover:scale-105 transition"
-              />
-            </Link>
+      <main className="max-w-6xl mx-auto p-6">
+        <div className="flex items-center justify-between mb-6">
+          <BackButton />
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">Products</h1>
+          <div /> {/* spacer */}
+        </div>
 
-            <div className="p-4">
-              <h2 className="text-lg font-semibold text-gray-800">{product.name}</h2>
-              <p className="text-gray-600">${product.price}</p>
-
-              <button className="mt-3 w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition">
-                Add to Cart
-              </button>
-            </div>
+        {loading ? (
+          <div className="text-center py-12 text-[var(--foreground)]">
+            Loading products...
           </div>
-        ))}
-      </div>
+        ) : error ? (
+          <div className="text-center py-12 text-red-600">{error}</div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-12 text-[var(--foreground)]">
+            No products yet.
+          </div>
+        ) : (
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map(p => (
+              <ProductCard key={p._id} product={p} />
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

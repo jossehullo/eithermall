@@ -1,0 +1,25 @@
+<!-- Primary Horizontal - logo-horizontal.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="120" viewBox="0 0 600 120" role="img" aria-label="Eithermall logo - horizontal">
+  <defs>
+    <linearGradient id="g1" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#1565D8"/>
+      <stop offset="100%" stop-color="#6A00FF"/>
+    </linearGradient>
+    <filter id="f1" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0b2340" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Icon: shopping bag + lightning/tech mark -->
+  <g transform="translate(18,10)" filter="url(#f1)">
+    <rect x="0" y="6" rx="12" ry="12" width="84" height="84" fill="url(#g1)"/>
+    <path d="M22 38c0-6 4-10 10-10h20c6 0 10 4 10 10v18c0 6-4 10-10 10H32c-6 0-10-4-10-10V38z" fill="#fff" opacity="0.96"/>
+    <path d="M44 30c0-3 3-6 6-6s6 3 6 6" stroke="#FF7A18" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(130,72)">
+    <text x="0" y="0" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial" font-weight="700" font-size="36" fill="#092D4A">EITHER</text>
+    <text x="118" y="0" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial" font-weight="700" font-size="36" fill="url(#g1)">MALL</text>
+  </g>
+</svg>

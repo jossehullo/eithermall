@@ -1,6 +1,6 @@
 'use client';
 
-import BackButton from '@/components/BackButton';
+import BackButton from '@/components/navigation/BackButton';
 import { useState } from 'react';
 
 export default function CartPage() {
