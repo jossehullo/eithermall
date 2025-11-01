@@ -1,5 +1,5 @@
+// src/app/admin/products/page.tsx
 'use client';
-import BackButton from '@/components/navigation/BackButton';
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,7 +14,9 @@ export default function ProductsPage() {
     category: '',
     stock: '',
   });
-  const token = localStorage.getItem('token');
+
+  // Safe localStorage access
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   async function fetchProducts() {
     const res = await fetch('http://localhost:5000/api/products');
@@ -28,6 +30,8 @@ export default function ProductsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!token) return alert('Not authenticated');
+
     const res = await fetch('http://localhost:5000/api/products', {
       method: 'POST',
       headers: {
@@ -49,7 +53,7 @@ export default function ProductsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this product?')) return;
+    if (!confirm('Delete this product?') || !token) return;
     await fetch(`http://localhost:5000/api/products/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
@@ -58,7 +62,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-[#001f3f]">Products</h1>
         <button
@@ -99,14 +103,13 @@ export default function ProductsPage() {
         </tbody>
       </table>
 
-      {/* Popup Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           >
             <motion.form
               onSubmit={handleSubmit}

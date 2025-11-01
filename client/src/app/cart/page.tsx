@@ -12,7 +12,7 @@ export default function CartPage() {
   const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Your Cart</h1>
         <BackButton />
@@ -25,7 +25,7 @@ export default function CartPage() {
           {cartItems.map(item => (
             <div
               key={item.id}
-              className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm"
+              className="flex justify-between items-center bg-white/90 p-4 rounded-xl shadow-sm"
             >
               <div>
                 <h2 className="font-semibold">{item.name}</h2>
@@ -40,7 +40,7 @@ export default function CartPage() {
             <span>Total:</span>
             <span>${total}</span>
           </div>
-          <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl transition-all duration-200">
+          <button className="w-full mt-4 bg-gradient-to-r from-[var(--brand-gradient-from)] to-[var(--brand-gradient-to)] text-white py-3 rounded-xl hover:opacity-90 transition-all duration-200">
             Proceed to Checkout
           </button>
         </div>

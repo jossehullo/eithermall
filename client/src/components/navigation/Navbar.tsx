@@ -1,91 +1,54 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import {
-  Home,
-  ShoppingCart,
-  Heart,
-  Package,
-  User,
-  LogOut,
-  LogIn,
-  UserPlus,
-} from 'lucide-react';
-
-/**
- * Navbar component (top-right)
- * - Logged out: Login, Register, Cart
- * - Logged in: My Account, Orders, Wishlist, Cart, Logout
- *
- * Icons: navy/black outline, labels are pale-orange per theme.
- */
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
-    // send user to public home / products page
-    router.push('/');
-  };
-
   return (
-    <nav className="navbar" aria-label="Main navigation">
-      <div className="navbar-items">
-        {/* If logged in show account links */}
-        {user ? (
+    <nav className="w-full fixed top-0 left-0 z-50 bg-[#081028]/90 backdrop-blur-md px-10 py-4 flex justify-end items-center shadow-md">
+      <div className="flex gap-4">
+        {!user ? (
           <>
-            <Link href="/profile" className="nav-item" aria-label="My Account">
-              <User />
-              <span className="label">My Account</span>
+            <Link href="/login">
+              <button className="nav-btn">Login</button>
             </Link>
-
-            <Link href="/orders" className="nav-item" aria-label="Orders">
-              <Package />
-              <span className="label">Orders</span>
+            <Link href="/register">
+              <button className="nav-btn">Register</button>
             </Link>
-
-            <Link href="/wishlist" className="nav-item" aria-label="Wishlist">
-              <Heart />
-              <span className="label">Wishlist</span>
+            <Link href="/cart">
+              <button className="nav-btn">Cart</button>
             </Link>
-
-            <Link href="/cart" className="nav-item" aria-label="Cart">
-              <ShoppingCart />
-              <span className="label">Cart</span>
-            </Link>
-
-            <button
-              onClick={handleLogout}
-              className="nav-item"
-              aria-label="Logout"
-              title="Logout"
-            >
-              <LogOut />
-              <span className="label">Logout</span>
-            </button>
           </>
         ) : (
-          /* Logged out */
           <>
-            <Link href="/login" className="nav-item" aria-label="Login">
-              <LogIn />
-              <span className="label">Login</span>
+            <Link href="/products">
+              <button className="nav-btn">Products</button>
             </Link>
-
-            <Link href="/register" className="nav-item" aria-label="Register">
-              <UserPlus />
-              <span className="label">Register</span>
+            <Link href="/wishlist">
+              <button className="nav-btn">Wishlist</button>
             </Link>
-
-            <Link href="/cart" className="nav-item" aria-label="Cart">
-              <ShoppingCart />
-              <span className="label">Cart</span>
+            <Link href="/orders">
+              <button className="nav-btn">Orders</button>
             </Link>
+            <Link href="/profile">
+              <button className="nav-btn">Profile</button>
+            </Link>
+            <Link href="/cart">
+              <button className="nav-btn">Cart</button>
+            </Link>
+            <button
+              className="nav-btn bg-[#ffb347] text-[#081028] font-semibold"
+              onClick={() => {
+                logout();
+                router.push('/');
+              }}
+            >
+              Logout
+            </button>
           </>
         )}
       </div>
