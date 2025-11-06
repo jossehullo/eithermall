@@ -14,8 +14,28 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    await register(username, email, password);
+
+    // Remove spaces before submitting
+    const cleanPhone = phone.replace(/\s+/g, '');
+
+    await register(username, email, password, cleanPhone);
     router.push('/login');
+  };
+
+  // Phone number formatter for Kenya (+254 7xx xxx xxx)
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let input = e.target.value.replace(/\D/g, ''); // remove non-digits
+    if (input.startsWith('0')) input = '254' + input.slice(1);
+    if (!input.startsWith('254')) input = '254' + input;
+    if (input.length > 12) input = input.slice(0, 12);
+
+    const formatted =
+      '+' +
+      input.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,3}).*/, (_, a, b, c, d) =>
+        d ? `${a} ${b} ${c} ${d}` : `${a} ${b} ${c}`
+      );
+
+    setPhone(formatted);
   };
 
   return (
@@ -38,7 +58,8 @@ export default function RegisterPage() {
             type="tel"
             placeholder="Phone Number"
             value={phone}
-            onChange={e => setPhone(e.target.value)}
+            onChange={handlePhoneChange}
+            onPaste={handlePhoneChange}
             className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
             required
           />
