@@ -2,133 +2,247 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
+
 import User from '../models/User.js';
+import { uploadAvatar } from '../middleware/upload.js'; // CHANGED: uploadAvatar
 
 const router = express.Router();
-
 const JWT_SECRET = process.env.JWT_SECRET || 'fallbacksecret';
 
-/* ========== REGISTER ========== */
+/**
+ * Build full public URL for avatar.
+ * DB stores: "avatars/filename.ext"
+ * URL: http://host/uploads/avatars/filename.ext
+ */
+const buildAvatarUrl = (req, avatarPath) => {
+  if (!avatarPath) return null;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const safePath = avatarPath.replace(/\\/g, '/');
+  return `${baseUrl}/uploads/${safePath}`;
+};
+
+/* REGISTER */
 router.post('/register', async (req, res) => {
   try {
-    const { name, email: rawEmail, password } = req.body || {};
+    const { username, email, phone, password } = req.body;
 
-    // tolerate inputs sent as objects by mistake
-    const email =
-      typeof rawEmail === 'object' && rawEmail?.email
-        ? String(rawEmail.email)
-        : String(rawEmail || '').trim();
-
-    if (!name || !email || !password) {
+    if (!username || !email || !phone || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
     const existingUser = await User.findOne({ email });
-    if (existingUser)
+    if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
+    }
 
-    const user = new User({ name, email, password });
+    const user = new User({
+      username,
+      email,
+      phone,
+      password,
+    });
+
     await user.save();
 
-    return res.status(201).json({
+    res.status(201).json({
       message: 'User registered successfully',
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error('Registration Error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-/* ========== CREATE PERMANENT ADMIN (dev only) ========== */
-router.post('/create-admin', async (req, res) => {
-  try {
-    const { name, email, password, secret } = req.body || {};
-    if (secret !== (process.env.ADMIN_CREATION_SECRET || 'yourDevSecretHere')) {
-      return res.status(403).json({ message: 'Invalid admin creation secret' });
-    }
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    const existing = await User.findOne({ email });
-    if (existing)
-      return res.status(400).json({ message: 'Admin with this email already exists' });
-
-    const admin = new User({ name, email, password, role: 'admin' });
-    await admin.save();
-
-    return res.status(201).json({
-      message: 'Admin registered successfully',
-      user: { id: admin._id, name: admin.name, email: admin.email, role: admin.role },
-    });
-  } catch (error) {
-    console.error('Admin Registration Error:', error);
-    return res.status(500).json({ message: 'Server error' });
-  }
-});
-
-/* ========== LOGIN ========== */
+/* LOGIN */
 router.post('/login', async (req, res) => {
   try {
-    let { email: rawEmail, password } = req.body || {};
+    const { email, password } = req.body;
 
-    // Protect: ensure email is a string (coerce if UI accidentally sends object)
-    if (!rawEmail || !password) {
-      return res.status(400).json({ message: 'Email & Password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email & password are required' });
     }
 
-    const email =
-      typeof rawEmail === 'object' && rawEmail?.email
-        ? String(rawEmail.email)
-        : String(rawEmail).trim();
-
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Invalid email or password' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
 
     const token = jwt.sign(
       { id: user._id, role: user.role, email: user.email },
       JWT_SECRET,
-      {
-        expiresIn: '7d',
-      }
+      { expiresIn: '30d' }
     );
 
-    // sanitize user before sending
-    const userSafe = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    };
-
-    return res.status(200).json({ message: 'Login successful', token, user: userSafe });
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatarUrl: buildAvatarUrl(req, user.avatar),
+      },
+    });
   } catch (error) {
     console.error('Login Error:', error);
-    return res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-/* ========== PROFILE (protected inline for simplicity) ========== */
+/* PROFILE (GET) */
 router.get('/profile', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer '))
+    if (!authHeader?.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'No token provided' });
+    }
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    return res.status(200).json({ message: 'Profile fetched successfully', user });
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const avatarUrl = buildAvatarUrl(req, user.avatar);
+
+    res.status(200).json({
+      message: 'Profile fetched successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar, // relative path
+        avatarUrl, // full URL
+        role: user.role,
+      },
+    });
   } catch (error) {
     console.error('Profile Error:', error);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* PROFILE (UPDATE) */
+router.put('/profile', uploadAvatar.single('avatar'), async (req, res) => {
+  // CHANGED: uploadAvatar
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { username, email, phone } = req.body;
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    if (phone && !/^\+254\d{9}$/.test(phone)) {
+      return res.status(400).json({ message: 'Invalid phone number' });
+    }
+
+    // New avatar?
+    if (req.file) {
+      // Delete old
+      if (user.avatar) {
+        const oldPath = path.join('uploads', user.avatar);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+      user.avatar = `avatars/${req.file.filename}`;
+    }
+
+    if (username) user.username = username;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+
+    await user.save();
+
+    const avatarUrl = buildAvatarUrl(req, user.avatar);
+
+    res.status(200).json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar,
+        avatarUrl,
+      },
+    });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/* CHANGE PASSWORD */
+router.put('/change-password', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'New passwords do not match' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    await user.setPassword(newPassword);
+    await user.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Change Password Error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

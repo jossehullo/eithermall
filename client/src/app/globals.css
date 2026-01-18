@@ -1,212 +1,115 @@
-/* src/app/globals.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
-  --background: #ffffff;
-  --foreground: #092d4a;
-  --brand-gradient-from: #6a00ff;
-  --brand-gradient-to: #092d4a;
-  --brand-accent: #ff7a18;
-  --brand-icon-dark: #092d4a;
-  --brand-orange-text: #ffab66;
-  --brand-muted: #6b7280;
-  --card-bg: #ffffff;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0e1a;
-    --foreground: #e5e7eb;
-    --card-bg: #111827;
-    --brand-icon-dark: #e5e7eb;
-    --brand-orange-text: #ffb87a;
+@media (min-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .products-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Inter', sans-serif;
-  background: var(--background);
-  color: var(--foreground);
-  transition: background 0.3s ease;
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(30, 20, 10, 0.06);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 50px rgba(30, 20, 10, 0.09);
 }
 
-/* ------------------------------ */
-/*   General Brand Button Styles  */
-/* ------------------------------ */
-
-.brand-btn {
-  background: linear-gradient(
-    135deg,
-    var(--brand-gradient-from),
-    var(--brand-gradient-to)
-  );
-  color: white;
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 9999px;
-  font-weight: 700;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
+.card-media {
+  width: 100%;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(106, 0, 255, 0.2);
+  background: linear-gradient(180deg, #fbf8f5 0%, #f6f2ee 100%);
 }
-.brand-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(106, 0, 255, 0.3);
-}
-
-/* ------------------------------ */
-/*   New Glossy Navbar Buttons    */
-/* ------------------------------ */
-
-.navbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 1rem 2rem;
-  background: transparent;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+.card-media img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
-.nav-btn {
-  background: linear-gradient(145deg, #0a2a43, #0f3a5f);
-  color: #ffffff;
-  padding: 0.6rem 1.2rem;
-  border-radius: 9999px;
+.card-body {
+  padding: 1rem;
+}
+.card-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+  margin-bottom: 0.45rem;
+}
+.card-price {
+  color: var(--muted);
   font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 0.3px;
-  transition: all 0.25s ease;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+.btn-primary {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: white;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  font-weight: 700;
+  border: none;
+}
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  color: var(--text);
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f4efe9, #efe9df, #f4efe9);
+  background-size: 200% 100%;
+  animation: skel 1.2s linear infinite;
+}
+@keyframes skel {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.skel-media {
+  height: 200px;
+  border-radius: 10px;
+}
+.skel-line {
+  height: 14px;
+  border-radius: 7px;
+}
+
+/* Back button */
+.back-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: none;
+  gap: 0.6rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
 }
 
-.nav-btn:hover {
-  background: linear-gradient(145deg, #134b7a, #1b6bbf);
-  box-shadow: 0 5px 12px rgba(27, 107, 191, 0.4);
-  transform: translateY(-2px);
-}
-
-.logout-btn {
-  background: linear-gradient(145deg, #7a0e0e, #b82020);
-}
-.logout-btn:hover {
-  background: linear-gradient(145deg, #b82020, #e63b3b);
-  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.4);
-}
-
-/* ------------------------------ */
-/*   Extra Polish & Animations    */
-/* ------------------------------ */
-
-.neon-glow {
-  box-shadow: 0 0 10px rgba(255, 140, 0, 0.3);
-}
-
-button {
-  cursor: pointer;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-.animate-slideIn {
-  animation: slideIn 0.35s ease-out;
-}
-/* --- Deep Yellow Glow Global Theme --- */
-
-/* full-page gradient background */
-body,
-.page-bg {
-  background: linear-gradient(180deg, #061028 0%, #0b1b36 60%, #0a1730 100%);
-  color: white;
-  min-height: 100vh;
-  background-attachment: fixed;
-}
-
-/* hero section container */
-.hero-card-glow {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02),
-    rgba(255, 255, 255, 0.01)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 40px rgba(255, 180, 40, 0.12);
-}
-
-/* gold accent text */
-.gold-accent {
-  background: linear-gradient(90deg, #ffdb4d, #ff8a00);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* gold button */
-.gold-btn {
-  padding: 12px 26px;
-  border-radius: 12px;
-  background: linear-gradient(90deg, #ffdb4d, #ffb347);
-  color: #081028;
-  font-weight: 800;
-  box-shadow: 0 8px 30px rgba(255, 180, 40, 0.2);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-}
-.gold-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(255, 180, 40, 0.3);
-}
-
-/* ghost login button */
-.ghost-white {
-  padding: 12px 22px;
-  border-radius: 12px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.95);
-  font-weight: 700;
-  transition: all 0.15s ease;
-}
-.ghost-white:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* fade & slide animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-slideIn {
-  animation: fadeIn 0.6s ease-out;
+/* small helper */
+.small-muted {
+  font-size: 0.92rem;
+  color: var(--muted);
 }

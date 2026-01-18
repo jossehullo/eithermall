@@ -1,153 +1,211 @@
-// src/app/admin/products/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api';
 
-export default function ProductsPage() {
+const ITEMS_PER_PAGE = 10;
+
+export default function AdminProductsPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    stock: '',
-  });
+  const [loading, setLoading] = useState(true);
 
-  // Safe localStorage access
+  // 🔍 Search & filter state
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [page, setPage] = useState(1);
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  async function fetchProducts() {
-    const res = await fetch('http://localhost:5000/api/products');
-    const data = await res.json();
-    setProducts(data.products || []);
-  }
-
   useEffect(() => {
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
     fetchProducts();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!token) return alert('Not authenticated');
+  async function fetchProducts() {
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const res = await fetch('http://localhost:5000/api/products', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        ...form,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        image: 'https://via.placeholder.com/300',
-      }),
-    });
-    if (res.ok) {
-      setShowForm(false);
-      setForm({ name: '', description: '', price: '', category: '', stock: '' });
-      fetchProducts();
+      setProducts(data);
+    } catch (err) {
+      console.error('Failed to load products:', err);
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this product?') || !token) return;
-    await fetch(`http://localhost:5000/api/products/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+  async function deleteProduct(id: string) {
+    if (!confirm('Are you sure? This cannot be undone.')) return;
+
+    try {
+      await axios.delete(`${API_BASE_URL}/products/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setProducts(prev => prev.filter(p => p._id !== id));
+    } catch {
+      alert('Failed to delete product');
+    }
+  }
+
+  /* ============================
+     DERIVED DATA
+     ============================ */
+
+  const categories = useMemo(() => {
+    return Array.from(new Set(products.map(p => p.category))).filter(Boolean);
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+
+      const matchesCategory = category ? p.category === category : true;
+
+      return matchesSearch && matchesCategory;
     });
-    fetchProducts();
+  }, [products, search, category]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+
+  const paginatedProducts = filteredProducts.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+  /* ============================
+     UI
+     ============================ */
+
+  if (loading) {
+    return (
+      <div className="text-center text-yellow-400 text-lg py-10">Loading products…</div>
+    );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-[#001f3f]">Products</h1>
+    <div className="text-white">
+      {/* HEADER */}
+      <div className="flex flex-wrap gap-4 justify-between items-center mb-6">
+        <h1 className="text-4xl font-extrabold gold-accent">Products</h1>
+
         <button
-          onClick={() => setShowForm(true)}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition"
+          onClick={() => router.push('/admin/products/new')}
+          className="px-5 py-2 rounded-lg bg-yellow-500 text-black font-semibold hover:bg-yellow-400"
         >
           + Add Product
         </button>
       </div>
 
-      <table className="w-full border-collapse bg-white shadow-md rounded-lg overflow-hidden">
-        <thead className="bg-[#001f3f] text-white">
-          <tr>
-            <th className="p-3 text-left">Name</th>
-            <th className="p-3 text-left">Category</th>
-            <th className="p-3 text-left">Price</th>
-            <th className="p-3 text-left">Stock</th>
-            <th className="p-3 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map(p => (
-            <tr key={p._id} className="border-b hover:bg-gray-50">
-              <td className="p-3">{p.name}</td>
-              <td className="p-3">{p.category}</td>
-              <td className="p-3">KSh {p.price}</td>
-              <td className="p-3">{p.stock}</td>
-              <td className="p-3">
-                <button
-                  onClick={() => handleDelete(p._id)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* SEARCH & FILTERS */}
+      <div className="flex flex-wrap gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search products…"
+          value={search}
+          onChange={e => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          className="px-4 py-2 rounded-lg bg-black/30 border border-white/20 focus:outline-none focus:border-yellow-400"
+        />
 
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          >
-            <motion.form
-              onSubmit={handleSubmit}
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white p-6 rounded-xl w-96 shadow-lg space-y-3"
+        <select
+          value={category}
+          onChange={e => {
+            setCategory(e.target.value);
+            setPage(1);
+          }}
+          className="px-4 py-2 rounded-lg bg-black/30 border border-white/20"
+        >
+          <option value="">All Categories</option>
+          {categories.map(cat => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* TABLE */}
+      <div className="overflow-x-auto bg-black/20 p-4 rounded-xl border border-yellow-500/20">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-yellow-400 border-b border-yellow-500/30">
+              <th className="py-2 px-3">Name</th>
+              <th className="py-2 px-3">Category</th>
+              <th className="py-2 px-3">Price</th>
+              <th className="py-2 px-3">Stock</th>
+              <th className="py-2 px-3">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {paginatedProducts.length > 0 ? (
+              paginatedProducts.map(product => (
+                <tr
+                  key={product._id}
+                  className="border-b border-gray-700 hover:bg-white/5"
+                >
+                  <td className="py-2 px-3">{product.name}</td>
+                  <td className="py-2 px-3">{product.category}</td>
+                  <td className="py-2 px-3">KSh {product.price.toLocaleString()}</td>
+                  <td className="py-2 px-3">{product.stock}</td>
+
+                  <td className="py-2 px-3 flex gap-2">
+                    <button
+                      onClick={() => router.push(`/admin/products/${product._id}`)}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => deleteProduct(product._id)}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-sm"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td className="py-6 text-center text-white/50" colSpan={5}>
+                  No products found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* PAGINATION */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-6">
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPage(i + 1)}
+              className={`px-4 py-2 rounded-lg border ${
+                page === i + 1
+                  ? 'bg-yellow-500 text-black font-bold'
+                  : 'border-white/30 hover:bg-white/10'
+              }`}
             >
-              <h2 className="text-xl font-bold text-[#001f3f] mb-2">Add New Product</h2>
-              {['name', 'description', 'category', 'price', 'stock'].map(f => (
-                <input
-                  key={f}
-                  placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
-                  value={(form as any)[f]}
-                  onChange={e => setForm({ ...form, [f]: e.target.value })}
-                  required
-                  className="border p-2 w-full rounded-md focus:ring-2 focus:ring-orange-400"
-                />
-              ))}
-              <div className="flex justify-end space-x-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-3 py-2 rounded-md border text-gray-700 hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-md bg-orange-500 text-white"
-                >
-                  Save
-                </button>
-              </div>
-            </motion.form>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,69 +1,97 @@
 'use client';
-import BackButton from '@/components/navigation/BackButton';
-import { useAuth } from '../../../context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
-export default function AdminDashboard() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { API_BASE_URL } from '@/lib/api';
+
+interface Stats {
+  products: number;
+  orders: number;
+  users: number;
+}
+
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-    } else if (user.role !== 'admin') {
-      router.push('/profile');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setLoading(false);
+      return;
     }
-  }, [user, router]);
 
-  if (!user || user.role !== 'admin') return null;
+    fetch(`${API_BASE_URL}/admin/stats`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => setStats(data))
+      .catch(() => toast.error('Failed to load dashboard stats'))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <nav className="flex justify-between items-center bg-blue-600 text-white p-4 shadow-md">
-        <h1 className="text-xl font-bold">Admin Dashboard</h1>
-        <button
-          onClick={logout}
-          className="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-200"
-        >
-          Logout
-        </button>
-      </nav>
+    <div className="text-white">
+      {/* HEADER */}
+      <h1 className="text-4xl font-extrabold mb-2 gold-accent">Admin Dashboard</h1>
+      <p className="text-white/60 mb-8 text-lg">
+        Executive overview of platform activity
+      </p>
 
-      <main className="flex-1 p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
-          <h2 className="text-lg font-semibold mb-2">Manage Products</h2>
-          <p className="text-gray-600">Add, edit, or remove products in store.</p>
-          <button
-            onClick={() => router.push('/admin/products')}
-            className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Go
-          </button>
-        </div>
+      {/* STATS */}
+      {loading ? (
+        <p className="text-yellow-400 text-lg">Loading dashboard stats…</p>
+      ) : stats ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+          <StatCard
+            title="Total Products"
+            value={stats.products}
+            accent="border-yellow-400"
+          />
 
-        <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
-          <h2 className="text-lg font-semibold mb-2">Manage Users</h2>
-          <p className="text-gray-600">View or update registered users.</p>
-          <button
-            onClick={() => router.push('/admin/users')}
-            className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Go
-          </button>
-        </div>
+          <StatCard title="Total Orders" value={stats.orders} accent="border-blue-400" />
 
-        <div className="bg-white p-4 rounded-xl shadow hover:shadow-lg transition">
-          <h2 className="text-lg font-semibold mb-2">Orders</h2>
-          <p className="text-gray-600">Track and manage customer orders.</p>
-          <button
-            onClick={() => router.push('/admin/orders')}
-            className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Go
-          </button>
+          <StatCard title="Total Users" value={stats.users} accent="border-green-400" />
         </div>
-      </main>
+      ) : (
+        <p className="text-white/60">No data available</p>
+      )}
+
+      {/* WELCOME PANEL */}
+      <div className="mt-12 p-6 bg-white/5 backdrop-blur-xl rounded-xl border border-yellow-500/10 shadow">
+        <h3 className="text-2xl font-bold mb-2 gold-accent">Welcome, Admin 👋</h3>
+        <p className="text-white/70 text-lg">
+          Manage products, orders, and users using the admin sidebar.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ============================
+   SMALL COMPONENT
+   ============================ */
+
+function StatCard({
+  title,
+  value,
+  accent,
+}: {
+  title: string;
+  value: number;
+  accent: string;
+}) {
+  return (
+    <div
+      className={`p-6 bg-white/10 backdrop-blur-xl rounded-xl shadow-lg border ${accent}/30`}
+    >
+      <h2 className="text-lg font-medium text-white/70 mb-2">{title}</h2>
+      <p className="text-4xl font-extrabold gold-accent">{value}</p>
     </div>
   );
 }

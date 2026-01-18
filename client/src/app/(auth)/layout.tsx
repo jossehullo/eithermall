@@ -1,9 +1,9 @@
-// src/app/(auth)/layout.tsx
+'use client';
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({ children }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 page-bg text-[var(--foreground)]">
-      <div className="w-full max-w-md animate-fadeIn">{children}</div>
+    <div className="min-h-screen flex items-center justify-center page-bg p-6">
+      <div className="w-full max-w-md">{children}</div>
     </div>
   );
 }
