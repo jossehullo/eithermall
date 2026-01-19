@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
+
   const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -24,7 +25,28 @@ export default function RegisterPage() {
 
   // Phone number formatter for Kenya (+254 7xx xxx xxx)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let input = e.target.value.replace(/\D/g, ''); // remove non-digits
+    let input = e.target.value.replace(/\D/g, '');
+
+    if (input.startsWith('0')) input = '254' + input.slice(1);
+    if (!input.startsWith('254')) input = '254' + input;
+    if (input.length > 12) input = input.slice(0, 12);
+
+    const formatted =
+      '+' +
+      input.replace(/^(\d{3})(\d{3})(\d{3})(\d{0,3}).*/, (_, a, b, c, d) =>
+        d ? `${a} ${b} ${c} ${d}` : `${a} ${b} ${c}`
+      );
+
+    setPhone(formatted);
+  };
+
+  // ✅ Correct handler for paste events
+  const handlePhonePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+
+    const pastedText = e.clipboardData.getData('text').replace(/\D/g, '');
+    let input = pastedText;
+
     if (input.startsWith('0')) input = '254' + input.slice(1);
     if (!input.startsWith('254')) input = '254' + input;
     if (input.length > 12) input = input.slice(0, 12);
@@ -59,7 +81,7 @@ export default function RegisterPage() {
             placeholder="Phone Number"
             value={phone}
             onChange={handlePhoneChange}
-            onPaste={handlePhoneChange}
+            onPaste={handlePhonePaste}
             className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
             required
           />
