@@ -27,6 +27,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ✅ API base URL (works locally + on Vercel)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,14 +44,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   /* ===================== LOGIN ===================== */
   const login = async (email: string, password: string) => {
-    const res = await fetch('http://localhost:5000/api/auth/login', {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Login failed');
+
+    // ✅ Proper error handling
+    if (!res.ok) {
+      throw new Error(data.message || 'Login failed');
+    }
 
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
@@ -62,14 +69,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     phone?: string
   ) => {
-    const res = await fetch('http://localhost:5000/api/auth/register', {
+    const res = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password, phone }),
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Registration failed');
+
+    if (!res.ok) {
+      throw new Error(data.message || 'Registration failed');
+    }
 
     router.push('/login');
   };
