@@ -25,13 +25,9 @@ const __dirname = dirname(__filename);
 // Middleware
 app.use(
   cors({
-    origin: [
-      'http://localhost:3000',
-      'https://eithermall.vercel.app',
-      'https://eithermall-ndrhhxb1-josses-projects-380237f2.vercel.app',
-    ],
+    origin: ['http://localhost:3000', 'https://eithermall.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
+    credentials: false,
   })
 );
 
