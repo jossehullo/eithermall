@@ -27,15 +27,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ✅ API base URL (works locally + on Vercel)
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+// ✅ MATCHES VERCEL ENV VAR
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Load user from localStorage on refresh
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
@@ -44,15 +43,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   /* ===================== LOGIN ===================== */
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
 
     const data = await res.json();
 
-    // ✅ Proper error handling
     if (!res.ok) {
       throw new Error(data.message || 'Login failed');
     }
@@ -69,9 +68,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     phone?: string
   ) => {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ username, email, password, phone }),
     });
 
@@ -84,7 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/login');
   };
 
-  /* ===================== LOGOUT ===================== */
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
