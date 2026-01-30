@@ -25,7 +25,7 @@ type Product = {
   packagingOptions?: PackagingOption[];
 };
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
@@ -88,7 +88,11 @@ export default function ProductDetailsPage() {
       <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap' }}>
         {/* IMAGE */}
         <img
-          src={product.imageUrl || product.image}
+          src={
+            product.imageUrl?.startsWith('http')
+              ? product.imageUrl
+              : `${process.env.NEXT_PUBLIC_API_URL}/${product.imageUrl || product.image}`
+          }
           style={{
             width: 360,
             height: 360,

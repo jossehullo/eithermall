@@ -242,7 +242,11 @@ export default function ProductsPage() {
             }}
           >
             <img
-              src={product.imageUrl || product.image}
+              src={
+                product.imageUrl?.startsWith('http')
+                  ? product.imageUrl
+                  : `${process.env.NEXT_PUBLIC_API_URL}/${product.imageUrl || product.image}`
+              }
               style={{
                 width: '100%',
                 height: 200,
