@@ -12,6 +12,7 @@ export default function ProfilePage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -22,7 +23,7 @@ export default function ProfilePage() {
 
     const loadProfile = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5000/api/auth/profile', {
+        const { data } = await axios.get(`${API_BASE}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
