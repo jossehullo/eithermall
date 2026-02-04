@@ -20,7 +20,6 @@ export default function RightNavbar() {
   const { user, logout } = useAuth();
   const { cartItems } = useCart();
   const totalItems = cartItems.length;
-
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname.startsWith(path);
@@ -30,12 +29,12 @@ export default function RightNavbar() {
 
   return (
     <nav
+      className="hidden md:flex" // 👈 hides on small screens
       style={{
         position: 'fixed',
         top: 20,
         right: 24,
         zIndex: 9999,
-        display: 'flex',
         gap: 12,
         alignItems: 'center',
         background: 'rgba(255, 255, 255, 0.95)',
@@ -92,7 +91,6 @@ export default function RightNavbar() {
         Profile
       </Link>
 
-      {/* Admin */}
       {user?.role === 'admin' && (
         <Link
           href="/admin"
@@ -103,7 +101,6 @@ export default function RightNavbar() {
         </Link>
       )}
 
-      {/* Login / Logout */}
       {user ? (
         <button
           onClick={logout}
