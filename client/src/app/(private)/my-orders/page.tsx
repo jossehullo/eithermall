@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { API_BASE_URL } from '@/lib/api';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+/* ================= TYPES ================= */
 
 type OrderItem = {
   productId?: string;
@@ -23,6 +26,8 @@ type Order = {
   createdAt: string;
 };
 
+/* ================= PAGE ================= */
+
 export default function MyOrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -30,23 +35,28 @@ export default function MyOrdersPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+
     if (!token) {
       toast.error('Please login to view your orders');
       router.push('/login');
       return;
     }
 
-    fetch(`${API_BASE_URL}/orders/my`, {
+    fetch(`${API_BASE_URL}/api/orders/my`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then(res => {
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error('Failed to fetch orders');
         return res.json();
       })
-      .then(data => setOrders(data))
-      .catch(() => toast.error('Failed to load orders'))
+      .then(data => {
+        setOrders(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        toast.error('Failed to load orders');
+      })
       .finally(() => setLoading(false));
   }, [router]);
 
@@ -56,7 +66,7 @@ export default function MyOrdersPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
-      {/* 🔙 BACK BUTTON */}
+      {/* BACK */}
       <button
         onClick={() => router.back()}
         style={{
@@ -117,7 +127,6 @@ export default function MyOrdersPage() {
                         : order.status === 'ready_for_delivery'
                           ? '#cff4fc'
                           : '#e2e3e5',
-                  color: '#000',
                 }}
               >
                 {order.status.replace(/_/g, ' ')}

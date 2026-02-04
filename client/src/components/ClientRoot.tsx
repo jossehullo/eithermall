@@ -4,16 +4,19 @@ import { usePathname } from 'next/navigation';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import RightNavbar from '@/components/navigation/RightNavbar';
+import MobileNavbar from '@/components/navigation/MobileNavbar';
 
 export default function ClientRoot({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const showNavbar = pathname !== '/';
+
+  const hideNav = pathname === '/' || pathname === '/login' || pathname === '/register';
 
   return (
     <AuthProvider>
       <CartProvider>
-        {showNavbar && <RightNavbar />}
-        <div className={showNavbar ? 'pt-32' : ''}>{children}</div>
+        {!hideNav && <RightNavbar />}
+        {!hideNav && <MobileNavbar />}
+        {children}
       </CartProvider>
     </AuthProvider>
   );

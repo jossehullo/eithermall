@@ -1,4 +1,3 @@
-// client/src/app/edit-profile/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,6 +12,8 @@ type User = {
   phone?: string;
   avatar?: string;
 };
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function EditProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  // Load current profile
+  /* ================= LOAD PROFILE ================= */
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -38,26 +39,24 @@ export default function EditProfilePage() {
     }
 
     axios
-      .get('http://localhost:5000/api/auth/profile', {
+      .get(`${API_BASE}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(({ data }) => {
         const userData: User = data.user || data;
         setUser(userData);
+
         setAvatarPreview(
-          userData.avatar
-            ? `http://localhost:5000/${userData.avatar}`
-            : '/default-avatar.png'
+          userData.avatar ? `${API_BASE}/${userData.avatar}` : '/default-avatar.png'
         );
       })
-      .catch(err => {
-        console.error('Error loading profile:', err);
+      .catch(() => {
         setError('Failed to load profile.');
       })
       .finally(() => setInitialLoading(false));
   }, [router]);
 
-  // When picking a file, open the cropper overlay
+  /* ================= FILE PICK ================= */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
@@ -70,7 +69,7 @@ export default function EditProfilePage() {
     reader.readAsDataURL(selected);
   };
 
-  // Save profile
+  /* ================= SAVE PROFILE ================= */
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -94,25 +93,21 @@ export default function EditProfilePage() {
         formData.append('avatar', avatarFile);
       }
 
-      const { data } = await axios.put(
-        'http://localhost:5000/api/auth/profile',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const { data } = await axios.put(`${API_BASE}/api/auth/profile`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const updated: User = data.user || data;
       setUser(updated);
+
       setAvatarPreview(
-        updated.avatar ? `http://localhost:5000/${updated.avatar}` : '/default-avatar.png'
+        updated.avatar ? `${API_BASE}/${updated.avatar}` : '/default-avatar.png'
       );
+
       setSuccess('Profile updated successfully!');
     } catch (err: any) {
-      console.error('Update error:', err);
       setError(err.response?.data?.message || 'Failed to update profile.');
     } finally {
       setLoading(false);
@@ -128,39 +123,21 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-50 flex flex-col"
-      // push content down so it’s not under the fixed navbar
-      style={{ paddingTop: 88 }}
-    >
-      {/* Top bar */}
-      <div className="bg-white shadow-md px-4 py-3 flex justify-between items-center">
-        <h1 className="text-lg font-semibold text-gray-800">Edit Profile</h1>
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-gray-600 hover:text-black transition"
-        >
-          ← Back
-        </button>
+    <div className="min-h-screen bg-gray-50" style={{ paddingTop: 88 }}>
+      <div className="bg-white shadow px-4 py-3 flex justify-between items-center">
+        <h1 className="text-lg font-semibold">Edit Profile</h1>
+        <button onClick={() => router.back()}>← Back</button>
       </div>
 
-      {/* Form */}
       <motion.form
         onSubmit={handleSave}
-        className="flex flex-col items-center justify-center flex-grow p-6"
+        className="flex flex-col items-center p-6"
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
       >
-        {/* Avatar picker */}
-        <label className="relative cursor-pointer">
-          <div className="w-28 h-28 rounded-full overflow-hidden border border-gray-300 shadow-md flex items-center justify-center bg-white">
-            <motion.img
-              src={avatarPreview}
-              alt="Profile"
-              className="w-full h-full object-cover"
-              whileHover={{ scale: 1.05 }}
-            />
+        <label className="cursor-pointer">
+          <div className="w-28 h-28 rounded-full overflow-hidden border shadow">
+            <img src={avatarPreview} className="w-full h-full object-cover" />
           </div>
 
           <input
@@ -169,84 +146,46 @@ export default function EditProfilePage() {
             onChange={handleFileChange}
             className="hidden"
           />
-          <p className="text-sm text-gray-500 mt-2 text-center">Tap to change avatar</p>
+          <p className="text-sm text-gray-500 text-center mt-2">Tap to change avatar</p>
         </label>
 
-        {/* CROP OVERLAY (uses your new AvatarCropper) */}
         {showCropper && cropImage && (
           <AvatarCropper
-            key={cropImage} // force fresh instance per image
             image={cropImage}
-            onCancel={() => {
-              setShowCropper(false);
-              setCropImage(null);
-            }}
-            onCropped={(croppedFile, previewUrl) => {
-              setAvatarFile(croppedFile);
-              setAvatarPreview(previewUrl);
+            onCancel={() => setShowCropper(false)}
+            onCropped={(file, preview) => {
+              setAvatarFile(file);
+              setAvatarPreview(preview);
               setShowCropper(false);
             }}
           />
         )}
 
-        {/* Fields */}
-        <div className="mt-6 bg-white p-6 rounded-2xl shadow-lg w-full max-w-md space-y-4">
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Username</label>
-            <input
-              type="text"
-              value={user.username}
-              onChange={e => setUser({ ...user, username: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-800 outline-none"
-              required
-            />
-          </div>
+        <div className="bg-white p-6 rounded-xl shadow w-full max-w-md mt-6 space-y-4">
+          <input
+            value={user.username}
+            onChange={e => setUser({ ...user, username: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+          />
 
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={user.email}
-              readOnly
-              className="w-full border border-gray-200 bg-gray-100 rounded-lg px-3 py-2 text-gray-500"
-            />
-          </div>
+          <input
+            value={user.email}
+            readOnly
+            className="w-full border bg-gray-100 px-3 py-2 rounded"
+          />
 
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Phone</label>
-            <input
-              type="tel"
-              value={user.phone || ''}
-              onChange={e => setUser({ ...user, phone: e.target.value })}
-              placeholder="+2547..., no leading 0"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-800 outline-none"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Use international format, e.g. <strong>+2547…</strong> (no leading 0).
-            </p>
-          </div>
+          <input
+            value={user.phone || ''}
+            onChange={e => setUser({ ...user, phone: e.target.value })}
+            className="w-full border px-3 py-2 rounded"
+          />
 
-          {success && <p className="text-green-600 text-center">{success}</p>}
-          {error && <p className="text-red-600 text-center">{error}</p>}
+          {success && <p className="text-green-600">{success}</p>}
+          {error && <p className="text-red-600">{error}</p>}
 
-          <motion.button
-            type="submit"
-            disabled={loading}
-            whileTap={{ scale: 0.97 }}
-            className="w-full mt-2 bg-gray-900 text-white py-2 rounded-full hover:bg-gray-800 transition disabled:opacity-70"
-          >
+          <button disabled={loading} className="w-full bg-black text-white py-2 rounded">
             {loading ? 'Saving...' : 'Save Changes'}
-          </motion.button>
-
-          <div className="text-center mt-3">
-            <button
-              type="button"
-              onClick={() => router.push('/change-password')}
-              className="text-sm text-gray-600 hover:text-black transition"
-            >
-              Change Password
-            </button>
-          </div>
+          </button>
         </div>
       </motion.form>
     </div>
