@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { API_BASE_URL } from '@/lib/api';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface Stats {
   products: number;
@@ -16,22 +17,35 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+
     if (!token) {
+      toast.error('You must be logged in as admin');
       setLoading(false);
       return;
     }
 
-    fetch(`${API_BASE_URL}/admin/stats`, {
+    fetch(`${API_BASE}/api/admin/stats`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-      .then(res => {
-        if (!res.ok) throw new Error();
+      .then(async res => {
+        if (res.status === 401 || res.status === 403) {
+          throw new Error('Unauthorized');
+        }
+        if (!res.ok) {
+          throw new Error('Failed request');
+        }
         return res.json();
       })
-      .then(data => setStats(data))
-      .catch(() => toast.error('Failed to load dashboard stats'))
+      .then(data => {
+        setStats(data);
+      })
+      .catch(err => {
+        console.error('Admin stats error:', err);
+        toast.error('Failed to load dashboard stats');
+        setStats(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -53,16 +67,14 @@ export default function AdminDashboardPage() {
             value={stats.products}
             accent="border-yellow-400"
           />
-
           <StatCard title="Total Orders" value={stats.orders} accent="border-blue-400" />
-
           <StatCard title="Total Users" value={stats.users} accent="border-green-400" />
         </div>
       ) : (
         <p className="text-white/60">No data available</p>
       )}
 
-      {/* WELCOME PANEL */}
+      {/* WELCOME */}
       <div className="mt-12 p-6 bg-white/5 backdrop-blur-xl rounded-xl border border-yellow-500/10 shadow">
         <h3 className="text-2xl font-bold mb-2 gold-accent">Welcome, Admin 👋</h3>
         <p className="text-white/70 text-lg">
@@ -73,10 +85,9 @@ export default function AdminDashboardPage() {
   );
 }
 
-/* ============================
-   SMALL COMPONENT
-   ============================ */
-
+/* =========================
+   STAT CARD
+========================= */
 function StatCard({
   title,
   value,
