@@ -39,15 +39,22 @@ export default function ChangePasswordPage() {
     try {
       setLoading(true);
 
-      const { data } = await axios.put(
+      await axios.put(
         `${API_BASE}/api/auth/change-password`,
-        { currentPassword, newPassword, confirmPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          oldPassword: currentPassword,
+          newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setMessage({
         type: 'success',
-        text: data.message || 'Password updated successfully.',
+        text: 'Password updated successfully.',
       });
 
       setCurrentPassword('');
@@ -56,7 +63,8 @@ export default function ChangePasswordPage() {
     } catch (error: any) {
       setMessage({
         type: 'error',
-        text: error.response?.data?.message || 'Failed to update password.',
+        text:
+          error.response?.data?.message || 'Failed to update password. Please try again.',
       });
     } finally {
       setLoading(false);
