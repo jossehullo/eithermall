@@ -42,6 +42,7 @@ export default function ProductsPage() {
   >('default');
   const [page, setPage] = useState(1);
 
+  /* MODAL */
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedUom, setSelectedUom] = useState<PackagingOption | null>(null);
@@ -62,7 +63,9 @@ export default function ProductsPage() {
   ======================= */
   const categories = useMemo(() => {
     const set = new Set<string>(['All']);
-    products.forEach(p => p.category && set.add(p.category));
+    products.forEach(p => {
+      if (p.category) set.add(p.category);
+    });
     return Array.from(set);
   }, [products]);
 
@@ -82,19 +85,27 @@ export default function ProductsPage() {
   ======================= */
   const sortedProducts = useMemo(() => {
     const list = [...filteredProducts];
-    if (sortBy === 'name-asc') return list.sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === 'price-asc')
+
+    if (sortBy === 'name-asc') {
+      return list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    if (sortBy === 'price-asc') {
       return list.sort(
         (a, b) =>
           (a.packagingOptions?.[0]?.price ?? a.price) -
           (b.packagingOptions?.[0]?.price ?? b.price)
       );
-    if (sortBy === 'price-desc')
+    }
+
+    if (sortBy === 'price-desc') {
       return list.sort(
         (a, b) =>
           (b.packagingOptions?.[0]?.price ?? b.price) -
           (a.packagingOptions?.[0]?.price ?? a.price)
       );
+    }
+
     return list;
   }, [filteredProducts, sortBy]);
 
@@ -109,16 +120,25 @@ export default function ProductsPage() {
   }, [sortedProducts, page]);
 
   /* =======================
-     MODAL
+     MODAL HELPERS
   ======================= */
   function openUomModal(product: Product) {
-    if (!product.stock) return;
+    if (!product.stock || product.stock <= 0) return;
+
     setSelectedProduct(product);
     setSelectedUom(product.packagingOptions?.[0] ?? null);
     setQty(1);
     setModalVisible(true);
   }
 
+  const maxQty =
+    selectedProduct && selectedUom && selectedProduct.stock
+      ? Math.floor(selectedProduct.stock / selectedUom.piecesPerUnit)
+      : Infinity;
+
+  /* =======================
+     ADD TO CART
+  ======================= */
   function handleAddToCart() {
     if (!selectedProduct || !selectedUom) return;
 
@@ -141,7 +161,9 @@ export default function ProductsPage() {
   ======================= */
   return (
     <div style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 36, fontWeight: 800 }}>Explore Our Collection</h1>
+      <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 16 }}>
+        Explore Our Collection
+      </h1>
 
       {/* GRID */}
       <div className="products-grid">
@@ -169,30 +191,36 @@ export default function ProductsPage() {
               }}
             />
 
-            <h3 style={{ marginTop: 10 }}>{product.name}</h3>
+            <h3 style={{ marginTop: 10, fontWeight: 700 }}>{product.name}</h3>
 
-            <p style={{ color: 'red', fontWeight: 700 }}>
+            <p style={{ color: '#c92a2a', fontWeight: 700 }}>
               From KSh{' '}
               {(product.packagingOptions?.[0]?.price || product.price).toLocaleString()}
             </p>
 
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
               <button
+                disabled={!product.stock || product.stock <= 0}
                 onClick={() => openUomModal(product)}
-                disabled={!product.stock}
                 style={{
                   flex: 1,
-                  background: '#000',
+                  padding: 10,
+                  background: product.stock ? '#000' : '#aaa',
                   color: '#fff',
                   borderRadius: 8,
                 }}
               >
-                Choose Unit
+                {product.stock ? 'Choose Unit' : 'Out of Stock'}
               </button>
 
               <button
                 onClick={() => router.push(`/products/${product._id}`)}
-                style={{ flex: 1 }}
+                style={{
+                  flex: 1,
+                  padding: 10,
+                  borderRadius: 8,
+                  border: '1px solid #ccc',
+                }}
               >
                 Details
               </button>
@@ -200,6 +228,122 @@ export default function ProductsPage() {
           </div>
         ))}
       </div>
+
+      {/* PAGINATION */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 10,
+            marginTop: 30,
+            flexWrap: 'wrap',
+          }}
+        >
+          <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+            ← Prev
+          </button>
+
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPage(i + 1)}
+              style={{
+                fontWeight: page === i + 1 ? 700 : 400,
+              }}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+            Next →
+          </button>
+        </div>
+      )}
+
+      {/* UNIT MODAL */}
+      {modalVisible && selectedProduct && selectedUom && (
+        <div
+          onClick={() => setModalVisible(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: 420,
+              background: '#fff',
+              borderRadius: 14,
+              padding: 24,
+            }}
+          >
+            <h2 style={{ marginBottom: 12 }}>Choose Unit for {selectedProduct.name}</h2>
+
+            {selectedProduct.packagingOptions?.map(uom => (
+              <div
+                key={uom.name}
+                onClick={() => {
+                  setSelectedUom(uom);
+                  setQty(1);
+                }}
+                style={{
+                  padding: 14,
+                  marginBottom: 10,
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  border:
+                    selectedUom.name === uom.name ? '2px solid green' : '1px solid #ddd',
+                }}
+              >
+                {uom.name} — KSh {uom.price.toLocaleString()}
+              </div>
+            ))}
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 20,
+                margin: 20,
+              }}
+            >
+              <button onClick={() => qty > 1 && setQty(qty - 1)}>−</button>
+              <strong>{qty}</strong>
+              <button disabled={qty >= maxQty} onClick={() => setQty(qty + 1)}>
+                +
+              </button>
+            </div>
+
+            <button
+              onClick={handleAddToCart}
+              style={{
+                width: '100%',
+                padding: 12,
+                background: '#000',
+                color: '#fff',
+                borderRadius: 10,
+              }}
+            >
+              Add to Cart
+            </button>
+
+            <button
+              onClick={() => setModalVisible(false)}
+              style={{ width: '100%', marginTop: 10 }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
