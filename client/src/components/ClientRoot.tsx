@@ -16,7 +16,9 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
       <CartProvider>
         {!hideNav && <RightNavbar />}
         {!hideNav && <MobileNavbar />}
-        {children}
+
+        {/* 🔽 RESERVED SPACE FOR NAVBARS */}
+        <main className="pt-[88px] pb-[72px]">{children}</main>
       </CartProvider>
     </AuthProvider>
   );

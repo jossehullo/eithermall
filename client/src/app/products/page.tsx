@@ -225,11 +225,13 @@ export default function ProductsPage() {
 
       {/* GRID */}
       <div
-        style={{
-          display: 'grid',
-          gap: 25,
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        }}
+        className="
+    grid gap-4
+    grid-cols-3
+    sm:grid-cols-3
+    md:grid-cols-4
+    lg:grid-cols-4
+  "
       >
         {paginatedProducts.map(product => (
           <div
@@ -247,12 +249,7 @@ export default function ProductsPage() {
                   ? product.imageUrl
                   : `${process.env.NEXT_PUBLIC_API_URL}/${product.imageUrl || product.image}`
               }
-              style={{
-                width: '100%',
-                height: 200,
-                objectFit: 'cover',
-                borderRadius: 10,
-              }}
+              className="w-full aspect-square object-cover rounded-lg"
             />
 
             <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 12 }}>
@@ -344,7 +341,7 @@ export default function ProductsPage() {
                   setQty(1);
                 }}
                 style={{
-                  padding: 14,
+                  padding: 12,
                   marginTop: 10,
                   borderRadius: 10,
                   border:
