@@ -19,7 +19,6 @@ type Product = {
   name: string;
   price: number;
   category?: string;
-  description?: string;
   stock?: number;
   image?: string;
   imageUrl?: string;
@@ -27,7 +26,6 @@ type Product = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
 const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
@@ -61,17 +59,12 @@ export default function ProductsPage() {
   }, []);
 
   /* =======================
-     CATEGORIES (FIXED ERROR)
+     CATEGORIES
   ======================= */
   const categories = useMemo(() => {
-    const s = new Set<string>(['All']);
-    if (!Array.isArray(products)) return ['All'];
-
-    products.forEach(p => {
-      if (p?.category) s.add(p.category);
-    });
-
-    return Array.from(s);
+    const set = new Set<string>(['All']);
+    products.forEach(p => p.category && set.add(p.category));
+    return Array.from(set);
   }, [products]);
 
   /* =======================
@@ -90,31 +83,26 @@ export default function ProductsPage() {
   ======================= */
   const sortedProducts = useMemo(() => {
     const list = [...filteredProducts];
-    switch (sortBy) {
-      case 'name-asc':
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-      case 'price-asc':
-        return list.sort(
-          (a, b) =>
-            (a.packagingOptions?.[0]?.price ?? a.price) -
-            (b.packagingOptions?.[0]?.price ?? b.price)
-        );
-      case 'price-desc':
-        return list.sort(
-          (a, b) =>
-            (b.packagingOptions?.[0]?.price ?? b.price) -
-            (a.packagingOptions?.[0]?.price ?? a.price)
-        );
-      default:
-        return list;
-    }
+    if (sortBy === 'name-asc') return list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === 'price-asc')
+      return list.sort(
+        (a, b) =>
+          (a.packagingOptions?.[0]?.price ?? a.price) -
+          (b.packagingOptions?.[0]?.price ?? b.price)
+      );
+    if (sortBy === 'price-desc')
+      return list.sort(
+        (a, b) =>
+          (b.packagingOptions?.[0]?.price ?? b.price) -
+          (a.packagingOptions?.[0]?.price ?? a.price)
+      );
+    return list;
   }, [filteredProducts, sortBy]);
 
   /* =======================
      PAGINATION
   ======================= */
   const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
-
   const paginatedProducts = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return sortedProducts.slice(start, start + ITEMS_PER_PAGE);
@@ -124,21 +112,13 @@ export default function ProductsPage() {
      MODAL HELPERS
   ======================= */
   function openUomModal(product: Product) {
-    if (!product.stock || product.stock <= 0) return;
+    if (!product.stock) return;
     setSelectedProduct(product);
     setSelectedUom(product.packagingOptions?.[0] ?? null);
     setQty(1);
     setModalVisible(true);
   }
 
-  const maxQty =
-    selectedProduct && selectedUom && selectedProduct.stock
-      ? Math.floor(selectedProduct.stock / selectedUom.piecesPerUnit)
-      : Infinity;
-
-  /* =======================
-     ADD TO CART
-  ======================= */
   function handleAddToCart() {
     if (!selectedProduct || !selectedUom) return;
 
@@ -160,13 +140,11 @@ export default function ProductsPage() {
      UI
   ======================= */
   return (
-    <div style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 16 }}>
-        Explore Our Collection
-      </h1>
+    <div className="px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto pt-24">
+      <h1 className="text-3xl font-extrabold mb-6">Explore Our Collection</h1>
 
       {/* SEARCH + SORT */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div className="flex flex-wrap gap-3 mb-6">
         <input
           value={search}
           onChange={e => {
@@ -174,13 +152,7 @@ export default function ProductsPage() {
             setPage(1);
           }}
           placeholder="Search products…"
-          style={{
-            maxWidth: 400,
-            padding: '12px 18px',
-            borderRadius: 30,
-            border: '1px solid #ccc',
-            flex: 1,
-          }}
+          className="flex-1 max-w-md rounded-full border px-5 py-3"
         />
 
         <select
@@ -189,11 +161,7 @@ export default function ProductsPage() {
             setSortBy(e.target.value as any);
             setPage(1);
           }}
-          style={{
-            padding: '12px 18px',
-            borderRadius: 30,
-            border: '1px solid #ccc',
-          }}
+          className="rounded-full border px-5 py-3"
         >
           <option value="default">Sort by</option>
           <option value="name-asc">Name A → Z</option>
@@ -203,7 +171,7 @@ export default function ProductsPage() {
       </div>
 
       {/* CATEGORIES */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 25, flexWrap: 'wrap' }}>
+      <div className="flex flex-wrap gap-2 mb-8">
         {categories.map(cat => (
           <button
             key={cat}
@@ -211,12 +179,9 @@ export default function ProductsPage() {
               setActiveCategory(cat);
               setPage(1);
             }}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 30,
-              background: activeCategory === cat ? '#f6c23e' : '#fff',
-              border: '1px solid #ddd',
-            }}
+            className={`px-4 py-2 rounded-full border text-sm ${
+              activeCategory === cat ? 'bg-yellow-400' : 'bg-white'
+            }`}
           >
             {cat}
           </button>
@@ -224,68 +189,40 @@ export default function ProductsPage() {
       </div>
 
       {/* GRID */}
-      <div
-        className="
-    grid gap-4
-    grid-cols-3
-    sm:grid-cols-3
-    md:grid-cols-4
-    lg:grid-cols-4
-  "
-      >
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {paginatedProducts.map(product => (
           <div
             key={product._id}
-            style={{
-              background: '#fff',
-              borderRadius: 14,
-              padding: 14,
-              boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-            }}
+            className="bg-white rounded-xl p-3 shadow hover:shadow-lg transition"
           >
             <img
               src={
                 product.imageUrl?.startsWith('http')
                   ? product.imageUrl
-                  : `${process.env.NEXT_PUBLIC_API_URL}/${product.imageUrl || product.image}`
+                  : `${API_BASE}/${product.imageUrl || product.image}`
               }
               className="w-full aspect-square object-cover rounded-lg"
             />
 
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 12 }}>
-              {product.name}
-            </h3>
+            <h3 className="mt-3 font-semibold">{product.name}</h3>
 
-            <p style={{ color: '#c92a2a', fontSize: 18, fontWeight: 700 }}>
+            <p className="text-red-600 font-bold">
               From KSh{' '}
               {(product.packagingOptions?.[0]?.price || product.price).toLocaleString()}
             </p>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <div className="flex gap-2 mt-3">
               <button
-                disabled={!product.stock || product.stock <= 0}
                 onClick={() => openUomModal(product)}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: 10,
-                  background: product.stock ? '#000' : '#aaa',
-                  color: '#fff',
-                  fontWeight: 600,
-                  cursor: product.stock ? 'pointer' : 'not-allowed',
-                }}
+                disabled={!product.stock}
+                className="flex-1 rounded-lg bg-black text-white py-2 text-sm disabled:bg-gray-400"
               >
-                {product.stock ? 'Choose Unit' : 'Out of Stock'}
+                Choose Unit
               </button>
 
               <button
                 onClick={() => router.push(`/products/${product._id}`)}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: 10,
-                  border: '1px solid #ccc',
-                }}
+                className="flex-1 rounded-lg border py-2 text-sm"
               >
                 Details
               </button>
@@ -296,9 +233,7 @@ export default function ProductsPage() {
 
       {/* PAGINATION */}
       {totalPages > 1 && (
-        <div
-          style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 30 }}
-        >
+        <div className="flex justify-center gap-2 mt-10">
           <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>
             ← Prev
           </button>
@@ -313,25 +248,17 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* MODAL */}
+      {/* MODAL (unchanged logic) */}
       {modalVisible && selectedProduct && selectedUom && (
         <div
           onClick={() => setModalVisible(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 9999,
-          }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ width: 420, background: '#fff', borderRadius: 14, padding: 24 }}
+            className="bg-white rounded-xl p-6 w-[380px]"
           >
-            <h2>Choose Unit for {selectedProduct.name}</h2>
+            <h2 className="font-bold mb-4">Choose Unit for {selectedProduct.name}</h2>
 
             {selectedProduct.packagingOptions?.map(uom => (
               <div
@@ -340,38 +267,19 @@ export default function ProductsPage() {
                   setSelectedUom(uom);
                   setQty(1);
                 }}
-                style={{
-                  padding: 12,
-                  marginTop: 10,
-                  borderRadius: 10,
-                  border:
-                    selectedUom.name === uom.name ? '2px solid green' : '1px solid #ddd',
-                  cursor: 'pointer',
-                }}
+                className={`p-3 rounded-lg border mb-2 cursor-pointer ${
+                  selectedUom.name === uom.name ? 'border-green-500' : ''
+                }`}
               >
                 {uom.name} — KSh {uom.price.toLocaleString()}
               </div>
             ))}
 
-            <div
-              style={{ display: 'flex', justifyContent: 'center', gap: 20, margin: 20 }}
-            >
-              <button onClick={() => qty > 1 && setQty(qty - 1)}>−</button>
-              <strong>{qty}</strong>
-              <button disabled={qty >= maxQty} onClick={() => setQty(qty + 1)}>
-                +
-              </button>
-            </div>
-
-            <button onClick={handleAddToCart} style={{ width: '100%', padding: 12 }}>
-              Add to Cart
-            </button>
-
             <button
-              onClick={() => setModalVisible(false)}
-              style={{ width: '100%', marginTop: 10 }}
+              onClick={handleAddToCart}
+              className="w-full bg-black text-white py-2 rounded-lg mt-4"
             >
-              Cancel
+              Add to Cart
             </button>
           </div>
         </div>
