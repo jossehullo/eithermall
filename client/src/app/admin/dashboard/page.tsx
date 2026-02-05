@@ -16,16 +16,22 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // ✅ Always run client-side only
+    if (typeof window === 'undefined') return;
+
     const token = localStorage.getItem('token');
 
     if (!token) {
-      toast.error('You must be logged in as admin');
+      console.warn('[ADMIN] No auth token found');
+      toast.error('Please log in again');
       setLoading(false);
       return;
     }
 
     fetch(`${API_BASE}/api/admin/stats`, {
+      method: 'GET',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     })
@@ -33,16 +39,19 @@ export default function AdminDashboardPage() {
         if (res.status === 401 || res.status === 403) {
           throw new Error('Unauthorized');
         }
+
         if (!res.ok) {
-          throw new Error('Failed request');
+          const text = await res.text();
+          throw new Error(text || 'Failed request');
         }
+
         return res.json();
       })
       .then(data => {
         setStats(data);
       })
       .catch(err => {
-        console.error('Admin stats error:', err);
+        console.error('[ADMIN DASHBOARD ERROR]', err);
         toast.error('Failed to load dashboard stats');
         setStats(null);
       })
@@ -50,35 +59,32 @@ export default function AdminDashboardPage() {
   }, []);
 
   return (
-    <div className="text-white">
+    <div>
       {/* HEADER */}
-      <h1 className="text-4xl font-extrabold mb-2 gold-accent">Admin Dashboard</h1>
-      <p className="text-white/60 mb-8 text-lg">
+      <h1 className="text-4xl font-extrabold mb-2">Admin Dashboard</h1>
+
+      <p className="text-gray-500 mb-8 text-lg">
         Executive overview of platform activity
       </p>
 
       {/* STATS */}
       {loading ? (
-        <p className="text-yellow-400 text-lg">Loading dashboard stats…</p>
+        <p className="text-yellow-600 text-lg">Loading dashboard stats…</p>
       ) : stats ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-          <StatCard
-            title="Total Products"
-            value={stats.products}
-            accent="border-yellow-400"
-          />
-          <StatCard title="Total Orders" value={stats.orders} accent="border-blue-400" />
-          <StatCard title="Total Users" value={stats.users} accent="border-green-400" />
+          <StatCard title="Total Products" value={stats.products} />
+          <StatCard title="Total Orders" value={stats.orders} />
+          <StatCard title="Total Users" value={stats.users} />
         </div>
       ) : (
-        <p className="text-white/60">No data available</p>
+        <p className="text-gray-500">No data available</p>
       )}
 
       {/* WELCOME */}
-      <div className="mt-12 p-6 bg-white/5 backdrop-blur-xl rounded-xl border border-yellow-500/10 shadow">
-        <h3 className="text-2xl font-bold mb-2 gold-accent">Welcome, Admin 👋</h3>
-        <p className="text-white/70 text-lg">
-          Manage products, orders, and users using the admin sidebar.
+      <div className="mt-12 p-6 bg-gray-50 rounded-xl border shadow-sm">
+        <h3 className="text-2xl font-bold mb-2">Welcome, Admin 👋</h3>
+        <p className="text-gray-600 text-lg">
+          Manage products, orders, and users using the admin panel.
         </p>
       </div>
     </div>
@@ -88,21 +94,11 @@ export default function AdminDashboardPage() {
 /* =========================
    STAT CARD
 ========================= */
-function StatCard({
-  title,
-  value,
-  accent,
-}: {
-  title: string;
-  value: number;
-  accent: string;
-}) {
+function StatCard({ title, value }: { title: string; value: number }) {
   return (
-    <div
-      className={`p-6 bg-white/10 backdrop-blur-xl rounded-xl shadow-lg border ${accent}/30`}
-    >
-      <h2 className="text-lg font-medium text-white/70 mb-2">{title}</h2>
-      <p className="text-4xl font-extrabold gold-accent">{value}</p>
+    <div className="p-6 bg-white rounded-xl shadow border">
+      <h2 className="text-lg font-medium text-gray-500 mb-2">{title}</h2>
+      <p className="text-4xl font-extrabold">{value}</p>
     </div>
   );
 }
