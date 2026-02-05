@@ -22,11 +22,16 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Middleware
+/* =========================
+   MIDDLEWARE
+========================= */
+
+// ✅ FIXED CORS (Authorization header allowed)
 app.use(
   cors({
     origin: ['http://localhost:3000', 'https://eithermall.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,
   })
 );
@@ -34,30 +39,38 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
+/* =========================
+   STATIC FILES
+========================= */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API routes
+/* =========================
+   API ROUTES
+========================= */
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
 
-// Health check
+/* =========================
+   HEALTH CHECK
+========================= */
 app.get('/', (req, res) => {
   res.send('Eithermall API is running...');
 });
 
-// 404 handler (LAST)
+/* =========================
+   404 HANDLER (LAST)
+========================= */
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// --------------------
-// DATABASE CONNECTION
-// --------------------
+/* =========================
+   DATABASE CONNECTION
+========================= */
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -71,7 +84,6 @@ mongoose
   .then(() => {
     console.log('✅ MongoDB Connected');
 
-    // 👇 THIS IS WHERE IT GOES
     mongoose.connection.once('open', () => {
       console.log('📦 Connected to database:', mongoose.connection.name);
     });
