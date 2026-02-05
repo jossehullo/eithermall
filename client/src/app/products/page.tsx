@@ -63,9 +63,7 @@ export default function ProductsPage() {
   ======================= */
   const categories = useMemo(() => {
     const set = new Set<string>(['All']);
-    products.forEach(p => {
-      if (p.category) set.add(p.category);
-    });
+    products.forEach(p => p.category && set.add(p.category));
     return Array.from(set);
   }, [products]);
 
@@ -161,9 +159,80 @@ export default function ProductsPage() {
   ======================= */
   return (
     <div style={{ padding: 32 }}>
-      <h1 style={{ fontSize: 36, fontWeight: 800, marginBottom: 16 }}>
-        Explore Our Collection
-      </h1>
+      <h1 style={{ fontSize: 36, fontWeight: 800 }}>Explore Our Collection</h1>
+
+      {/* SEARCH + SORT */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          flexWrap: 'wrap',
+          margin: '20px 0',
+        }}
+      >
+        <input
+          value={search}
+          onChange={e => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          placeholder="Search products..."
+          style={{
+            flex: 1,
+            minWidth: 220,
+            padding: '12px 16px',
+            borderRadius: 30,
+            border: '1px solid #ddd',
+          }}
+        />
+
+        <select
+          value={sortBy}
+          onChange={e => {
+            setSortBy(e.target.value as any);
+            setPage(1);
+          }}
+          style={{
+            padding: '12px 16px',
+            borderRadius: 30,
+            border: '1px solid #ddd',
+            minWidth: 160,
+          }}
+        >
+          <option value="default">Sort by</option>
+          <option value="name-asc">Name A → Z</option>
+          <option value="price-asc">Price Low → High</option>
+          <option value="price-desc">Price High → Low</option>
+        </select>
+      </div>
+
+      {/* CATEGORIES */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 10,
+          marginBottom: 25,
+          flexWrap: 'wrap',
+        }}
+      >
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => {
+              setActiveCategory(cat);
+              setPage(1);
+            }}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 30,
+              background: activeCategory === cat ? '#f6c23e' : '#fff',
+              border: '1px solid #ddd',
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
 
       {/* GRID */}
       <div className="products-grid">
@@ -198,7 +267,13 @@ export default function ProductsPage() {
               {(product.packagingOptions?.[0]?.price || product.price).toLocaleString()}
             </p>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                marginTop: 10,
+              }}
+            >
               <button
                 disabled={!product.stock || product.stock <= 0}
                 onClick={() => openUomModal(product)}
