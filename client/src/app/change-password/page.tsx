@@ -25,6 +25,11 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setMessage(null);
 
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setMessage({ type: 'error', text: 'All fields are required.' });
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setMessage({ type: 'error', text: 'Passwords do not match.' });
       return;
