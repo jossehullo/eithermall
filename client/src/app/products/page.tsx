@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
+import { resolveImageUrl } from '@/lib/image';
 
 /* =======================
    TYPES
@@ -247,11 +248,8 @@ export default function ProductsPage() {
             }}
           >
             <img
-              src={
-                product.imageUrl?.startsWith('http')
-                  ? product.imageUrl
-                  : `${API_BASE}/${product.imageUrl || product.image}`
-              }
+              src={resolveImageUrl(product.imageUrl || product.image)}
+              alt={product.name}
               style={{
                 width: '100%',
                 height: 180,
