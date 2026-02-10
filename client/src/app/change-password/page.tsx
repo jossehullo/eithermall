@@ -25,11 +25,13 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setMessage(null);
 
+    // ✅ Required fields check (POLISH FIX)
     if (!currentPassword || !newPassword || !confirmPassword) {
       setMessage({ type: 'error', text: 'All fields are required.' });
       return;
     }
 
+    // ✅ Password match check
     if (newPassword !== confirmPassword) {
       setMessage({ type: 'error', text: 'Passwords do not match.' });
       return;
