@@ -25,13 +25,12 @@ export default function ChangePasswordPage() {
     e.preventDefault();
     setMessage(null);
 
-    // ✅ Required fields check (POLISH FIX)
+    // ✅ Client-side validation
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setMessage({ type: 'error', text: 'All fields are required.' });
+      setMessage({ type: 'error', text: 'All fields are required' });
       return;
     }
 
-    // ✅ Password match check
     if (newPassword !== confirmPassword) {
       setMessage({ type: 'error', text: 'Passwords do not match.' });
       return;
@@ -49,8 +48,9 @@ export default function ChangePasswordPage() {
       await axios.put(
         `${API_BASE}/api/auth/change-password`,
         {
-          oldPassword: currentPassword,
+          currentPassword,
           newPassword,
+          confirmPassword,
         },
         {
           headers: {
