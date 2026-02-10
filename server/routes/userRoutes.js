@@ -5,95 +5,61 @@ import User from '../models/User.js';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallbacksecret';
 
-/* ========= Middleware: require admin ========= */
 const requireAdmin = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No token provided' });
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token' });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = auth.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    const user = await User.findById(decoded.id);
-    if (!user) return res.status(401).json({ message: 'Invalid token user' });
-
-    if (user.role !== 'admin') {
+    const admin = await User.findById(decoded.id);
+    if (!admin || admin.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
     }
 
-    req.admin = user;
+    req.admin = admin;
     next();
   } catch (err) {
-    console.error('Admin auth error:', err);
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    return res.status(401).json({ message: 'Invalid token' });
   }
 };
 
-/* ========= GET all users (admin only) ========= */
-router.get('/', requireAdmin, async (req, res) => {
-  try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
-    res.json(users);
-  } catch (err) {
-    console.error('GET users error:', err);
-    res.status(500).json({ message: 'Failed to fetch users' });
-  }
+/* GET USERS */
+router.get('/', requireAdmin, async (_, res) => {
+  const users = await User.find().select('-password').sort({ createdAt: -1 });
+  res.json(users);
 });
 
-/* ========= DELETE user (admin only) ========= */
+/* DELETE USER */
 router.delete('/:id', requireAdmin, async (req, res) => {
-  try {
-    // prevent deleting yourself
-    if (req.params.id === String(req.admin._id)) {
-      return res.status(400).json({ message: 'You cannot delete your own account' });
-    }
-
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    res.json({ message: 'User deleted' });
-  } catch (err) {
-    console.error('Delete user error:', err);
-    res.status(500).json({ message: 'Failed to delete user' });
+  if (String(req.admin._id) === req.params.id) {
+    return res.status(400).json({ message: 'You cannot delete yourself' });
   }
+
+  const user = await User.findByIdAndDelete(req.params.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  res.json({ message: 'User deleted' });
 });
 
-/* ========= PROMOTE to admin ========= */
+/* PROMOTE */
 router.patch('/:id/make-admin', requireAdmin, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { role: 'admin' },
-      { new: true }
-    ).select('-password');
-
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    res.json({ message: 'User promoted to admin', user });
-  } catch (err) {
-    console.error('Promote user error:', err);
-    res.status(500).json({ message: 'Failed to promote user' });
+  if (String(req.admin._id) === req.params.id) {
+    return res.status(400).json({ message: 'You are already admin' });
   }
-});
 
-/* ========= DEMOTE to user (optional) ========= */
-router.patch('/:id/remove-admin', requireAdmin, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { role: 'user' },
-      { new: true }
-    ).select('-password');
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { role: 'admin' },
+    { new: true }
+  ).select('-password');
 
-    if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.json({ message: 'Admin rights removed', user });
-  } catch (err) {
-    console.error('Demote user error:', err);
-    res.status(500).json({ message: 'Failed to update user role' });
-  }
+  res.json({ user });
 });
 
 export default router;

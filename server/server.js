@@ -6,7 +6,6 @@ import cors from 'cors';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// Load env FIRST
 dotenv.config();
 
 // Routes
@@ -18,23 +17,23 @@ import orderRoutes from './routes/orderRoutes.js';
 
 const app = express();
 
-// Fix __dirname for ES modules
+// Fix __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /* =========================
-   MIDDLEWARE
+   CORS — FIXED PROPERLY
 ========================= */
-
-// ✅ FIXED CORS (Authorization header allowed)
 app.use(
   cors({
     origin: ['http://localhost:3000', 'https://eithermall.vercel.app'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false,
   })
 );
+
+// ✅ HANDLE PREFLIGHT
+app.options('*', cors());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -55,27 +54,27 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
 
 /* =========================
-   HEALTH CHECK
+   HEALTH
 ========================= */
 app.get('/', (req, res) => {
   res.send('Eithermall API is running...');
 });
 
 /* =========================
-   404 HANDLER (LAST)
+   404
 ========================= */
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
 /* =========================
-   DATABASE CONNECTION
+   DB
 ========================= */
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
-  console.error('❌ MONGO_URI is missing in .env');
+  console.error('❌ MONGO_URI missing');
   process.exit(1);
 }
 
@@ -83,18 +82,9 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB Connected');
-
-    mongoose.connection.once('open', () => {
-      console.log('📦 Connected to database:', mongoose.connection.name);
-    });
-
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📁 Uploads: ${path.join(__dirname, 'uploads')}`);
-      console.log(`📁 Public: ${path.join(__dirname, 'public')}`);
-    });
+    app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
   })
   .catch(err => {
-    console.error('❌ MongoDB connection error:', err.message);
+    console.error('❌ Mongo error:', err.message);
     process.exit(1);
   });
