@@ -6,6 +6,7 @@ import cors from 'cors';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+// Load env FIRST
 dotenv.config();
 
 // Routes
@@ -17,23 +18,22 @@ import orderRoutes from './routes/orderRoutes.js';
 
 const app = express();
 
-// Fix __dirname
+// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /* =========================
-   CORS — FIXED PROPERLY
+   MIDDLEWARE
 ========================= */
+
 app.use(
   cors({
     origin: ['http://localhost:3000', 'https://eithermall.vercel.app'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
   })
 );
-
-// ✅ HANDLE PREFLIGHT
-app.options('*', cors());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -42,7 +42,6 @@ app.use(express.urlencoded({ extended: true }));
    STATIC FILES
 ========================= */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
 
 /* =========================
    API ROUTES
@@ -54,21 +53,21 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
 
 /* =========================
-   HEALTH
+   HEALTH CHECK
 ========================= */
-app.get('/', (req, res) => {
+app.get('/', (_, res) => {
   res.send('Eithermall API is running...');
 });
 
 /* =========================
-   404
+   404 HANDLER (LAST)
 ========================= */
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
 /* =========================
-   DB
+   DATABASE CONNECTION
 ========================= */
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
@@ -85,6 +84,6 @@ mongoose
     app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
   })
   .catch(err => {
-    console.error('❌ Mongo error:', err.message);
+    console.error('❌ MongoDB error:', err.message);
     process.exit(1);
   });
