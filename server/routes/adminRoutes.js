@@ -16,11 +16,25 @@ router.get('/check', protect, adminOnly, (req, res) => {
 // ✅ Admin dashboard stats (REQUIRED)
 router.get('/stats', protect, adminOnly, async (req, res) => {
   try {
-    const products = await Product.countDocuments();
-    const orders = await Order.countDocuments();
-    const users = await User.countDocuments();
+    const totalOrders = await Order.countDocuments();
+    const pendingOrders = await Order.countDocuments({ status: 'pending' });
+    const paidOrders = await Order.countDocuments({ status: 'paid' });
+    const deliveredOrders = await Order.countDocuments({ status: 'delivered' });
 
-    res.json({ products, orders, users });
+    const revenueData = await Order.aggregate([
+      { $match: { status: { $in: ['paid', 'delivered'] } } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+    ]);
+
+    const totalRevenue = revenueData[0]?.total || 0;
+
+    res.json({
+      totalOrders,
+      pendingOrders,
+      paidOrders,
+      deliveredOrders,
+      totalRevenue,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch stats' });
   }
