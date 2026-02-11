@@ -25,7 +25,7 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    fetch(`${API_BASE_URL}/orders/admin/stats`, {
+    fetch(`${API_BASE_URL}/api/admin/stats`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
