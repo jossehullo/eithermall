@@ -41,7 +41,7 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    fetch(`${API_BASE_URL}/orders`, {
+    fetch(`${API_BASE_URL}/api/orders`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => {
@@ -58,7 +58,7 @@ export default function AdminOrdersPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
