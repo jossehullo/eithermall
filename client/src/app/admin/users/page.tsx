@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -12,12 +13,19 @@ interface AdminUser {
   role: 'admin' | 'user';
 }
 
+interface TokenPayload {
+  id: string;
+  email: string;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+  const decoded: TokenPayload | null = token ? jwtDecode(token) : null;
 
   useEffect(() => {
     if (!token) return setLoading(false);
@@ -30,8 +38,6 @@ export default function AdminUsersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const me = users.find(u => u.email === 'admin@example.com'); // OR decode JWT later
-
   async function promote(id: string) {
     try {
       const res = await axios.patch(
@@ -41,8 +47,22 @@ export default function AdminUsersPage() {
       );
 
       setUsers(prev => prev.map(u => (u._id === id ? res.data.user : u)));
-    } catch {
+    } catch (err) {
       alert('Failed to promote user');
+    }
+  }
+
+  async function demote(id: string) {
+    try {
+      const res = await axios.patch(
+        `${API_BASE}/api/users/${id}/remove-admin`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setUsers(prev => prev.map(u => (u._id === id ? res.data.user : u)));
+    } catch {
+      alert('Failed to demote user');
     }
   }
 
@@ -91,6 +111,7 @@ export default function AdminUsersPage() {
           {filtered.map(u => (
             <tr key={u._id}>
               <td>{u.email}</td>
+
               <td>
                 <span
                   style={{
@@ -102,12 +123,20 @@ export default function AdminUsersPage() {
                   {u.role}
                 </span>
               </td>
+
               <td>
-                {u.role === 'user' && (
-                  <button onClick={() => promote(u._id)}>Make Admin</button>
-                )}
-                {me?._id !== u._id && (
-                  <button onClick={() => remove(u._id)}>Delete</button>
+                {u._id !== decoded?.id && (
+                  <>
+                    {u.role === 'user' && (
+                      <button onClick={() => promote(u._id)}>Make Admin</button>
+                    )}
+
+                    {u.role === 'admin' && (
+                      <button onClick={() => demote(u._id)}>Remove Admin</button>
+                    )}
+
+                    <button onClick={() => remove(u._id)}>Delete</button>
+                  </>
                 )}
               </td>
             </tr>
