@@ -56,13 +56,19 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen p-6" style={{ paddingTop: 88 }}>
       <div className="max-w-md mx-auto p-6 rounded-2xl shadow-xl text-center bg-white">
-        <img
-          src={avatarPreview}
-          className="w-32 h-32 rounded-full mx-auto mb-4 object-cover border-4 border-yellow-400"
-          alt="avatar"
-        />
+        {/* ✅ FIXED AVATAR SIZE */}
+        <div className="flex justify-center mb-4">
+          <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-400 shadow-md">
+            <img
+              src={avatarPreview}
+              alt="avatar"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
 
         <h2 className="text-2xl font-bold mb-1">{user?.username ?? 'User'}</h2>
+
         <p className="text-gray-600">{user?.email}</p>
         <p className="text-gray-600">{user?.phone || 'No phone added'}</p>
 
