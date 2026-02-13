@@ -60,19 +60,23 @@ export default function AdminProductsPage() {
     }
   }
 
+  // Unique categories
   const categories = useMemo(
     () => Array.from(new Set(products.map(p => p.category))).filter(Boolean),
     [products]
   );
 
+  // Filter
   const filtered = useMemo(() => {
     return products.filter(p => {
       const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
       const matchesCategory = category ? p.category === category : true;
+
       return matchesSearch && matchesCategory;
     });
   }, [products, search, category]);
 
+  // Sort
   const sorted = useMemo(() => {
     const list = [...filtered];
 
@@ -86,7 +90,9 @@ export default function AdminProductsPage() {
     }
   }, [filtered, sortBy]);
 
+  // Pagination
   const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
+
   const paginated = sorted.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   function changePage(newPage: number) {
@@ -100,22 +106,7 @@ export default function AdminProductsPage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '20px auto', padding: 20 }}>
-      {/* 🔹 BACK BUTTON */}
-      <button
-        onClick={() => router.push('/admin/dashboard')}
-        style={{
-          marginBottom: 20,
-          padding: '8px 14px',
-          borderRadius: 6,
-          border: '1px solid #ccc',
-          background: '#f5f5f5',
-          cursor: 'pointer',
-        }}
-      >
-        ← Back to Dashboard
-      </button>
-
-      {/* Top Header Row */}
+      {/* ================= HEADER ================= */}
       <div
         style={{
           display: 'flex',
@@ -125,7 +116,24 @@ export default function AdminProductsPage() {
         }}
       >
         <div>
+          {/* ✅ Correct Back Button */}
+          <button
+            onClick={() => router.push('/admin')}
+            style={{
+              marginBottom: 12,
+              padding: '8px 14px',
+              borderRadius: 6,
+              border: '1px solid #ccc',
+              background: '#f5f5f5',
+              cursor: 'pointer',
+            }}
+          >
+            ← Back to Admin
+          </button>
+
           <h1 style={{ fontSize: 30, fontWeight: 700 }}>Products</h1>
+
+          {/* Product count badge */}
           <span
             style={{
               background: '#111827',
@@ -157,8 +165,52 @@ export default function AdminProductsPage() {
         </button>
       </div>
 
-      {/* Rest of your existing code remains unchanged */}
+      {/* ================= FILTERS ================= */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          marginBottom: 20,
+          flexWrap: 'wrap',
+        }}
+      >
+        <input
+          placeholder="Search products…"
+          value={search}
+          onChange={e => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+          style={{ padding: 8 }}
+        />
 
+        <select
+          value={category}
+          onChange={e => {
+            setCategory(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All Categories</option>
+          {categories.map(cat => (
+            <option key={cat}>{cat}</option>
+          ))}
+        </select>
+
+        <select
+          value={sortBy}
+          onChange={e => {
+            setSortBy(e.target.value as any);
+            setPage(1);
+          }}
+        >
+          <option value="name">Sort by Name</option>
+          <option value="price">Sort by Price</option>
+          <option value="stock">Sort by Stock</option>
+        </select>
+      </div>
+
+      {/* ================= TABLE ================= */}
       <div style={{ overflowX: 'auto' }}>
         <table
           style={{
@@ -206,6 +258,7 @@ export default function AdminProductsPage() {
         </table>
       </div>
 
+      {/* ================= PAGINATION ================= */}
       {totalPages > 1 && (
         <div
           style={{
