@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 
 type PackagingRow = {
   name: string;
-  piecesPerUnit: number;
-  price?: number;
+  piecesPerUnit: number | '';
+  price?: number | '';
   minQty?: number;
   qtyStep?: number;
   maxQty?: number;
@@ -35,7 +35,6 @@ export default function AdminNewProductPage() {
   const raw = (process.env.NEXT_PUBLIC_API_BASE_URL as string) || 'http://localhost:5000';
   const API_BASE = raw.replace(/\/+$/, '').replace(/\/api$/, '');
 
-  // Form states
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [price, setPrice] = useState<number | ''>('');
@@ -48,14 +47,15 @@ export default function AdminNewProductPage() {
   const [packagingOptions, setPackagingOptions] = useState<PackagingRow[]>([
     {
       name: 'Pkt',
-      piecesPerUnit: 1,
-      price: 0,
-      minQty: 1,
-      qtyStep: 1,
-      maxQty: 0,
+      piecesPerUnit: '',
+      price: '',
       defaultForSale: true,
     },
-    { name: 'Carton', piecesPerUnit: 80, price: 0, minQty: 1, qtyStep: 1, maxQty: 0 },
+    {
+      name: 'Carton',
+      piecesPerUnit: '',
+      price: '',
+    },
   ]);
 
   const [loading, setLoading] = useState(false);
@@ -65,11 +65,8 @@ export default function AdminNewProductPage() {
       ...prev,
       {
         name: 'Pcs',
-        piecesPerUnit: 1,
-        price: 0,
-        minQty: 1,
-        qtyStep: 1,
-        maxQty: 0,
+        piecesPerUnit: '',
+        price: '',
       },
     ]);
   }
@@ -80,9 +77,9 @@ export default function AdminNewProductPage() {
 
   function updateRow(i: number, patch: Partial<PackagingRow>) {
     setPackagingOptions(prev => {
-      const c = [...prev];
-      c[i] = { ...c[i], ...patch };
-      return c;
+      const copy = [...prev];
+      copy[i] = { ...copy[i], ...patch };
+      return copy;
     });
   }
 
@@ -96,10 +93,7 @@ export default function AdminNewProductPage() {
     const cleaned = packagingOptions.map(p => ({
       name: p.name === 'Other' ? (p.customName || '').trim() : p.name,
       piecesPerUnit: Number(p.piecesPerUnit) || 1,
-      price: p.price ? Number(p.price) : 0,
-      minQty: p.minQty ? Number(p.minQty) : 1,
-      qtyStep: p.qtyStep ? Number(p.qtyStep) : 1,
-      maxQty: p.maxQty ? Number(p.maxQty) : 0,
+      price: Number(p.price) || 0,
       defaultForSale: !!p.defaultForSale,
       sellable: true,
     }));
@@ -134,7 +128,7 @@ export default function AdminNewProductPage() {
 
       alert('Product created');
       router.push('/admin/products');
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       alert('Failed to create product');
     } finally {
@@ -142,39 +136,34 @@ export default function AdminNewProductPage() {
     }
   }
 
-  // Reusable styles
-  const input = {
+  const inputStyle = {
     width: '100%',
     padding: '8px',
     borderRadius: 6,
     border: '1px solid #ccc',
   };
 
-  const label = {
-    fontWeight: 600,
-    marginBottom: 6,
-    display: 'block',
-  };
-
-  const tableCell: React.CSSProperties = {
-    padding: '10px',
-    borderBottom: '1px solid #f0f0f0',
-  };
-
-  const tableHead: React.CSSProperties = {
-    padding: '10px',
-    borderBottom: '2px solid #ddd',
-    background: '#fafafa',
-    fontWeight: 600,
-    fontSize: 14,
-  };
-
   return (
     <div style={{ maxWidth: 1100, margin: '20px auto', padding: 20 }}>
+      {/* 🔹 TOP BACK BUTTON */}
+      <button
+        onClick={() => router.push('/admin/products')}
+        style={{
+          marginBottom: 20,
+          padding: '8px 14px',
+          borderRadius: 6,
+          border: '1px solid #ccc',
+          background: '#f5f5f5',
+          cursor: 'pointer',
+        }}
+      >
+        ← Back to Products
+      </button>
+
       <h1 style={{ fontSize: 30, fontWeight: 700, marginBottom: 16 }}>Add New Product</h1>
 
       <form onSubmit={handleSubmit}>
-        {/* ───────────────────────────── PRODUCT BASIC INFO ───────────────────────────── */}
+        {/* BASIC INFO */}
         <div
           style={{
             background: '#fff',
@@ -184,94 +173,59 @@ export default function AdminNewProductPage() {
             marginBottom: 24,
           }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
-            Basic Information
-          </h2>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={label}>Product Name</label>
-              <input
-                style={input}
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-              />
-            </div>
+            <input
+              style={inputStyle}
+              placeholder="Product Name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+            />
 
-            <div>
-              <label style={label}>Category</label>
-              <input
-                style={input}
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                required
-              />
-            </div>
+            <input
+              style={inputStyle}
+              placeholder="Category"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              required
+            />
 
-            <div>
-              <label style={label}>Fallback Price</label>
-              <input
-                type="number"
-                style={input}
-                value={price}
-                onChange={e =>
-                  setPrice(e.target.value === '' ? '' : Number(e.target.value))
-                }
-              />
-            </div>
+            <input
+              type="number"
+              placeholder="Fallback Price"
+              style={inputStyle}
+              value={price}
+              onChange={e =>
+                setPrice(e.target.value === '' ? '' : Number(e.target.value))
+              }
+            />
 
-            <div>
-              <label style={label}>Stock (pieces)</label>
-              <input
-                type="number"
-                style={input}
-                value={stock}
-                onChange={e =>
-                  setStock(e.target.value === '' ? '' : Number(e.target.value))
-                }
-              />
-            </div>
+            <input
+              type="number"
+              placeholder="Stock"
+              style={inputStyle}
+              value={stock}
+              onChange={e =>
+                setStock(e.target.value === '' ? '' : Number(e.target.value))
+              }
+            />
 
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Description</label>
-              <textarea
-                style={{ ...input, minHeight: 80 }}
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-              />
-            </div>
+            <textarea
+              style={{ ...inputStyle, gridColumn: '1 / -1', minHeight: 80 }}
+              placeholder="Description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
 
-            <div>
-              <label style={label}>Base Unit Name (optional)</label>
-              <input
-                style={input}
-                value={baseUnitName}
-                onChange={e => setBaseUnitName(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label style={label}>Default Sale Unit (optional)</label>
-              <input
-                style={input}
-                value={defaultSaleUnit}
-                onChange={e => setDefaultSaleUnit(e.target.value)}
-              />
-            </div>
-
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Product Image</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => setImageFile(e.target.files?.[0] || null)}
-              />
-            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setImageFile(e.target.files?.[0] || null)}
+            />
           </div>
         </div>
 
-        {/* ───────────────────────────── PACKAGING OPTIONS ───────────────────────────── */}
+        {/* UOM SECTION */}
         <div
           style={{
             background: '#fff',
@@ -280,134 +234,86 @@ export default function AdminNewProductPage() {
             boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
           }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 10 }}>
-            Packaging / Units (UoM)
-          </h2>
-          <p style={{ color: '#666', marginBottom: 16 }}>
-            <strong>piecesPerUnit</strong> = how many pieces are inside this packaging.
-          </p>
+          <h2 style={{ fontWeight: 700, marginBottom: 16 }}>Packaging / Units (UoM)</h2>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={tableHead}>Unit</th>
-                <th style={tableHead}>Custom Name</th>
-                <th style={tableHead}>Pieces / Unit</th>
-                <th style={tableHead}>Price</th>
-                <th style={tableHead}>Default</th>
-                <th style={tableHead}>Remove</th>
-              </tr>
-            </thead>
+          {packagingOptions.map((row, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr auto',
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <select
+                value={row.name}
+                onChange={e => updateRow(i, { name: e.target.value })}
+                style={inputStyle}
+              >
+                {UOM_PRESETS.map(u => (
+                  <option key={u}>{u}</option>
+                ))}
+              </select>
 
-            <tbody>
-              {packagingOptions.map((row, i) => (
-                <tr key={i}>
-                  <td style={tableCell}>
-                    <select
-                      value={row.name}
-                      onChange={e => updateRow(i, { name: e.target.value })}
-                      style={input}
-                    >
-                      {UOM_PRESETS.map(u => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+              <input
+                type="number"
+                placeholder="Pieces per unit"
+                style={inputStyle}
+                value={row.piecesPerUnit}
+                onChange={e =>
+                  updateRow(i, {
+                    piecesPerUnit: e.target.value === '' ? '' : Number(e.target.value),
+                  })
+                }
+              />
 
-                  <td style={tableCell}>
-                    {row.name === 'Other' ? (
-                      <input
-                        style={input}
-                        value={row.customName ?? ''}
-                        onChange={e => updateRow(i, { customName: e.target.value })}
-                      />
-                    ) : (
-                      <div style={{ padding: '8px', color: '#666' }}>{row.name}</div>
-                    )}
-                  </td>
+              <input
+                type="number"
+                placeholder="Price"
+                style={inputStyle}
+                value={row.price}
+                onChange={e =>
+                  updateRow(i, {
+                    price: e.target.value === '' ? '' : Number(e.target.value),
+                  })
+                }
+              />
 
-                  <td style={tableCell}>
-                    <input
-                      type="number"
-                      style={input}
-                      value={row.piecesPerUnit}
-                      onChange={e =>
-                        updateRow(i, { piecesPerUnit: Number(e.target.value) || 1 })
-                      }
-                    />
-                  </td>
-
-                  <td style={tableCell}>
-                    <input
-                      type="number"
-                      style={input}
-                      value={row.price ?? ''}
-                      onChange={e => updateRow(i, { price: Number(e.target.value) || 0 })}
-                    />
-                  </td>
-
-                  <td style={tableCell}>
-                    <input
-                      type="checkbox"
-                      checked={!!row.defaultForSale}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setPackagingOptions(prev =>
-                            prev.map((p, idx) => ({
-                              ...p,
-                              defaultForSale: idx === i,
-                            }))
-                          );
-                        } else {
-                          updateRow(i, { defaultForSale: false });
-                        }
-                      }}
-                    />
-                  </td>
-
-                  <td style={tableCell}>
-                    <button
-                      type="button"
-                      onClick={() => removeRow(i)}
-                      style={{
-                        background: '#ffdddd',
-                        color: '#d00',
-                        border: '1px solid #d88',
-                        padding: '6px 10px',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              <button
+                type="button"
+                onClick={() => removeRow(i)}
+                style={{
+                  background: '#ffdddd',
+                  border: '1px solid #d88',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
 
           <button
             type="button"
             onClick={addRow}
             style={{
-              marginTop: 16,
-              padding: '10px 18px',
+              marginTop: 12,
+              padding: '8px 14px',
               background: '#0ea5a4',
               color: '#fff',
+              borderRadius: 6,
               border: 'none',
-              borderRadius: 8,
               cursor: 'pointer',
-              fontWeight: 600,
             }}
           >
             + Add UoM
           </button>
         </div>
 
-        {/* ───────────────────────────── SUBMIT BUTTONS ───────────────────────────── */}
-        <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+        {/* SUBMIT */}
+        <div style={{ marginTop: 24 }}>
           <button
             type="submit"
             disabled={loading}
@@ -422,20 +328,6 @@ export default function AdminNewProductPage() {
             }}
           >
             {loading ? 'Saving…' : 'Add Product'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => router.push('/admin/products')}
-            style={{
-              padding: '12px 20px',
-              borderRadius: 8,
-              border: '1px solid #ccc',
-              background: '#f9f9f9',
-              cursor: 'pointer',
-            }}
-          >
-            Back
           </button>
         </div>
       </form>
