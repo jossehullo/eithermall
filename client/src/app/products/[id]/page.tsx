@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { resolveImageUrl } from '@/lib/image';
 
 /* =======================
    TYPES
@@ -88,17 +89,17 @@ export default function ProductDetailsPage() {
       <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap' }}>
         {/* IMAGE */}
         <img
-          src={
-            product.imageUrl?.startsWith('http')
-              ? product.imageUrl
-              : `${process.env.NEXT_PUBLIC_API_URL}/${product.imageUrl || product.image}`
-          }
+          src={resolveImageUrl(product.image) || '/placeholder.png'}
+          alt={product.name}
           style={{
             width: 360,
             height: 360,
             objectFit: 'contain',
             borderRadius: 12,
             background: '#f5f5f5',
+          }}
+          onError={e => {
+            e.currentTarget.src = '/placeholder.png';
           }}
         />
 

@@ -29,7 +29,7 @@ export default function EditProfilePage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  /* ================= LOAD PROFILE ================= */
+  /* LOAD PROFILE */
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -39,14 +39,11 @@ export default function EditProfilePage() {
 
     axios
       .get(`${API_BASE}/api/auth/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
       .then(({ data }) => {
-        const userData: User = data.user || data;
+        const userData: User = data.user;
 
-        // Normalize phone to local digits only
         const normalizedPhone = userData.phone ? userData.phone.replace('+254', '') : '';
 
         setUser({
@@ -54,8 +51,11 @@ export default function EditProfilePage() {
           phone: normalizedPhone,
         });
 
+        // ✅ Cloudinary full URL
         setAvatarPreview(
-          userData.avatar ? `${API_BASE}/${userData.avatar}` : '/default-avatar.png'
+          userData.avatar && userData.avatar.startsWith('http')
+            ? userData.avatar
+            : '/default-avatar.png'
         );
       })
       .catch(() => {
@@ -63,8 +63,6 @@ export default function EditProfilePage() {
       })
       .finally(() => setInitialLoading(false));
   }, [router]);
-
-  /* ================= PHONE HELPERS ================= */
 
   const digitsOnly = user?.phone?.replace(/\D/g, '') || '';
 
@@ -78,8 +76,6 @@ export default function EditProfilePage() {
 
   const isPhoneValid = digitsOnly.length === 9 || digitsOnly.length === 0;
 
-  /* ================= FILE PICK ================= */
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
@@ -91,8 +87,6 @@ export default function EditProfilePage() {
     };
     reader.readAsDataURL(selected);
   };
-
-  /* ================= SAVE PROFILE ================= */
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +126,7 @@ export default function EditProfilePage() {
         },
       });
 
-      const updated: User = data.user || data;
+      const updated: User = data.user;
 
       setUser({
         ...updated,
@@ -140,7 +134,9 @@ export default function EditProfilePage() {
       });
 
       setAvatarPreview(
-        updated.avatar ? `${API_BASE}/${updated.avatar}` : '/default-avatar.png'
+        updated.avatar && updated.avatar.startsWith('http')
+          ? updated.avatar
+          : '/default-avatar.png'
       );
 
       setSuccess('Profile updated successfully!');
@@ -201,7 +197,6 @@ export default function EditProfilePage() {
         )}
 
         <div className="bg-white p-6 rounded-xl shadow w-full max-w-md mt-6 space-y-4">
-          {/* Username */}
           <input
             value={user.username}
             onChange={e =>
@@ -213,14 +208,12 @@ export default function EditProfilePage() {
             className="w-full border px-3 py-2 rounded"
           />
 
-          {/* Email */}
           <input
             value={user.email}
             readOnly
             className="w-full border bg-gray-100 px-3 py-2 rounded"
           />
 
-          {/* Phone */}
           <div>
             <div className="flex">
               <div className="px-3 py-2 bg-gray-100 border border-r-0 rounded-l text-gray-600">
@@ -252,7 +245,6 @@ export default function EditProfilePage() {
 
           {error && <p className="text-red-600">{error}</p>}
 
-          {/* Buttons */}
           <div className="flex gap-3">
             <button
               type="button"

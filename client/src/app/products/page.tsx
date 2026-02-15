@@ -28,7 +28,6 @@ type Product = {
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
 const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
@@ -43,7 +42,6 @@ export default function ProductsPage() {
   >('default');
   const [page, setPage] = useState(1);
 
-  /* MODAL */
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedUom, setSelectedUom] = useState<PackagingOption | null>(null);
@@ -69,7 +67,7 @@ export default function ProductsPage() {
   }, [products]);
 
   /* =======================
-     FILTER + SEARCH
+     FILTER
   ======================= */
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -119,11 +117,10 @@ export default function ProductsPage() {
   }, [sortedProducts, page]);
 
   /* =======================
-     MODAL HELPERS
+     MODAL
   ======================= */
   function openUomModal(product: Product) {
     if (!product.stock || product.stock <= 0) return;
-
     setSelectedProduct(product);
     setSelectedUom(product.packagingOptions?.[0] ?? null);
     setQty(1);
@@ -135,9 +132,6 @@ export default function ProductsPage() {
       ? Math.floor(selectedProduct.stock / selectedUom.piecesPerUnit)
       : Infinity;
 
-  /* =======================
-     ADD TO CART
-  ======================= */
   function handleAddToCart() {
     if (!selectedProduct || !selectedUom) return;
 
@@ -245,18 +239,46 @@ export default function ProductsPage() {
               borderRadius: 14,
               padding: 14,
               boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+              transition: 'transform 0.2s ease',
             }}
+            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
+            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
           >
-            <img
-              src={resolveImageUrl(product.imageUrl || product.image)}
-              alt={product.name}
+            {/* IMAGE CONTAINER */}
+            <div
               style={{
                 width: '100%',
-                height: 180,
-                objectFit: 'cover',
+                height: 200,
+                background: '#f8f8f8',
                 borderRadius: 10,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
-            />
+            >
+              <img
+                src={
+                  product.image?.startsWith('http')
+                    ? product.image
+                    : product.imageUrl?.startsWith('http')
+                      ? product.imageUrl
+                      : resolveImageUrl(product.image) || '/placeholder.png'
+                }
+                alt={product.name}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  transition: 'transform 0.3s ease',
+                }}
+                onMouseOver={e => (e.currentTarget.style.transform = 'scale(1.08)')}
+                onMouseOut={e => (e.currentTarget.style.transform = 'scale(1)')}
+                onError={e => {
+                  e.currentTarget.src = '/placeholder.png';
+                }}
+              />
+            </div>
 
             <h3 style={{ marginTop: 10, fontWeight: 700 }}>{product.name}</h3>
 
@@ -265,13 +287,7 @@ export default function ProductsPage() {
               {(product.packagingOptions?.[0]?.price || product.price).toLocaleString()}
             </p>
 
-            <div
-              style={{
-                display: 'flex',
-                gap: 10,
-                marginTop: 10,
-              }}
-            >
+            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
               <button
                 disabled={!product.stock || product.stock <= 0}
                 onClick={() => openUomModal(product)}
@@ -335,7 +351,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* UNIT MODAL */}
+      {/* MODAL */}
       {modalVisible && selectedProduct && selectedUom && (
         <div
           onClick={() => setModalVisible(false)}
@@ -390,7 +406,7 @@ export default function ProductsPage() {
             >
               <button onClick={() => qty > 1 && setQty(qty - 1)}>−</button>
               <strong>{qty}</strong>
-              <button disabled={qty >= maxQty} onClick={() => setQty(qty + 1)}>
+              <button disabled={qty >= maxQty} onClick={() => setQty(q => q + 1)}>
                 +
               </button>
             </div>

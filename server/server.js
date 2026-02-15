@@ -1,15 +1,12 @@
 // server/server.js
-import express from 'express';
+
 import dotenv from 'dotenv';
+dotenv.config(); // this is enough since you run from /server
+
+import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
 
-// Load env FIRST
-dotenv.config();
-
-// Routes
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -18,9 +15,14 @@ import orderRoutes from './routes/orderRoutes.js';
 
 const app = express();
 
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+/* =========================
+   DEBUG ENV CHECK (LOCAL ONLY)
+========================= */
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Cloud Name:', process.env.CLOUDINARY_CLOUD_NAME);
+  console.log('API Key:', process.env.CLOUDINARY_API_KEY);
+  console.log('API Secret exists:', !!process.env.CLOUDINARY_API_SECRET);
+}
 
 /* =========================
    MIDDLEWARE
@@ -39,13 +41,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 /* =========================
-   STATIC FILES
-========================= */
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-/* =========================
    API ROUTES
 ========================= */
+
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
@@ -55,13 +53,15 @@ app.use('/api/orders', orderRoutes);
 /* =========================
    HEALTH CHECK
 ========================= */
+
 app.get('/', (_, res) => {
   res.send('Eithermall API is running...');
 });
 
 /* =========================
-   404 HANDLER (LAST)
+   404 HANDLER
 ========================= */
+
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
@@ -69,6 +69,7 @@ app.use((req, res) => {
 /* =========================
    DATABASE CONNECTION
 ========================= */
+
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 
