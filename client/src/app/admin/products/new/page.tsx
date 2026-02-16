@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { API_BASE } from '@/lib/api';
 
 type PackagingRow = {
   name: string;
@@ -31,9 +32,6 @@ const UOM_PRESETS = [
 
 export default function AdminNewProductPage() {
   const router = useRouter();
-
-  const raw = (process.env.NEXT_PUBLIC_API_BASE_URL as string) || 'http://localhost:5000';
-  const API_BASE = raw.replace(/\/+$/, '').replace(/\/api$/, '');
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');

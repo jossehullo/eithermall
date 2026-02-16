@@ -3,8 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_BASE } from '@/lib/api';
 
 type PackagingRow = {
   name: string;
