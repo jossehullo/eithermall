@@ -3,18 +3,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { API_BASE } from '@/lib/api';
 
 type PackagingRow = {
   name: string;
   piecesPerUnit: number | '';
   price?: number | '';
-  minQty?: number;
-  qtyStep?: number;
-  maxQty?: number;
-  defaultForSale?: boolean;
-  sellable?: boolean;
   customName?: string;
+  defaultForSale?: boolean;
 };
 
 const UOM_PRESETS = [
@@ -30,6 +25,10 @@ const UOM_PRESETS = [
   'Other',
 ];
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '').replace(/\/api$/, '') ||
+  'http://localhost:5000';
+
 export default function AdminNewProductPage() {
   const router = useRouter();
 
@@ -39,34 +38,16 @@ export default function AdminNewProductPage() {
   const [stock, setStock] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [baseUnitName, setBaseUnitName] = useState('');
-  const [defaultSaleUnit, setDefaultSaleUnit] = useState('');
 
   const [packagingOptions, setPackagingOptions] = useState<PackagingRow[]>([
-    {
-      name: 'Pkt',
-      piecesPerUnit: '',
-      price: '',
-      defaultForSale: true,
-    },
-    {
-      name: 'Carton',
-      piecesPerUnit: '',
-      price: '',
-    },
+    { name: 'Pkt', piecesPerUnit: '', price: '', defaultForSale: true },
+    { name: 'Carton', piecesPerUnit: '', price: '' },
   ]);
 
   const [loading, setLoading] = useState(false);
 
   function addRow() {
-    setPackagingOptions(prev => [
-      ...prev,
-      {
-        name: 'Pcs',
-        piecesPerUnit: '',
-        price: '',
-      },
-    ]);
+    setPackagingOptions(prev => [...prev, { name: 'Pcs', piecesPerUnit: '', price: '' }]);
   }
 
   function removeRow(i: number) {
@@ -96,28 +77,22 @@ export default function AdminNewProductPage() {
       sellable: true,
     }));
 
-    const baseUnit = baseUnitName || cleaned[0].name;
-    const defaultUnit =
-      defaultSaleUnit || (cleaned.find(p => p.defaultForSale) || cleaned[0]).name;
-
     const fd = new FormData();
     fd.append('name', name);
     fd.append('category', category);
     fd.append('price', String(price || 0));
     fd.append('stock', String(stock || 0));
     fd.append('description', description);
-    fd.append('baseUnitName', baseUnit);
-    fd.append('defaultSaleUnit', defaultUnit);
     fd.append('packagingOptions', JSON.stringify(cleaned));
+
     if (imageFile) fd.append('image', imageFile);
 
-    const url = `${API_BASE}/api/products`;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
     setLoading(true);
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-      await axios.post(url, fd, {
+    try {
+      await axios.post(`${API_BASE}/api/products`, fd, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           'Content-Type': 'multipart/form-data',
@@ -134,200 +109,101 @@ export default function AdminNewProductPage() {
     }
   }
 
-  const inputStyle = {
-    width: '100%',
-    padding: '8px',
-    borderRadius: 6,
-    border: '1px solid #ccc',
-  };
-
   return (
     <div style={{ maxWidth: 1100, margin: '20px auto', padding: 20 }}>
-      {/* 🔹 TOP BACK BUTTON */}
-      <button
-        onClick={() => router.push('/admin/products')}
-        style={{
-          marginBottom: 20,
-          padding: '8px 14px',
-          borderRadius: 6,
-          border: '1px solid #ccc',
-          background: '#f5f5f5',
-          cursor: 'pointer',
-        }}
-      >
-        ← Back to Products
-      </button>
+      <button onClick={() => router.push('/admin/products')}>← Back to Products</button>
 
-      <h1 style={{ fontSize: 30, fontWeight: 700, marginBottom: 16 }}>Add New Product</h1>
+      <h1>Add New Product</h1>
 
       <form onSubmit={handleSubmit}>
-        {/* BASIC INFO */}
-        <div
-          style={{
-            background: '#fff',
-            padding: 20,
-            borderRadius: 12,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-            marginBottom: 24,
-          }}
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <input
-              style={inputStyle}
-              placeholder="Product Name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-            />
+        <input
+          placeholder="Product Name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
 
-            <input
-              style={inputStyle}
-              placeholder="Category"
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              required
-            />
+        <input
+          placeholder="Category"
+          value={category}
+          onChange={e => setCategory(e.target.value)}
+        />
 
-            <input
-              type="number"
-              placeholder="Fallback Price"
-              style={inputStyle}
-              value={price}
+        <input
+          type="number"
+          placeholder="Fallback Price"
+          value={price}
+          onChange={e => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
+        />
+
+        <input
+          type="number"
+          placeholder="Stock"
+          value={stock}
+          onChange={e => setStock(e.target.value === '' ? '' : Number(e.target.value))}
+        />
+
+        <textarea
+          placeholder="Description"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+        />
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={e => setImageFile(e.target.files?.[0] || null)}
+        />
+
+        {packagingOptions.map((row, i) => (
+          <div key={i}>
+            <select
+              value={row.name}
               onChange={e =>
-                setPrice(e.target.value === '' ? '' : Number(e.target.value))
+                updateRow(i, {
+                  name: e.target.value,
+                })
               }
-            />
-
-            <input
-              type="number"
-              placeholder="Stock"
-              style={inputStyle}
-              value={stock}
-              onChange={e =>
-                setStock(e.target.value === '' ? '' : Number(e.target.value))
-              }
-            />
-
-            <textarea
-              style={{ ...inputStyle, gridColumn: '1 / -1', minHeight: 80 }}
-              placeholder="Description"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-            />
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={e => setImageFile(e.target.files?.[0] || null)}
-            />
-          </div>
-        </div>
-
-        {/* UOM SECTION */}
-        <div
-          style={{
-            background: '#fff',
-            padding: 20,
-            borderRadius: 12,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-          }}
-        >
-          <h2 style={{ fontWeight: 700, marginBottom: 16 }}>Packaging / Units (UoM)</h2>
-
-          {packagingOptions.map((row, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr auto',
-                gap: 10,
-                marginBottom: 10,
-              }}
             >
-              <select
-                value={row.name}
-                onChange={e => updateRow(i, { name: e.target.value })}
-                style={inputStyle}
-              >
-                {UOM_PRESETS.map(u => (
-                  <option key={u}>{u}</option>
-                ))}
-              </select>
+              {UOM_PRESETS.map(u => (
+                <option key={u}>{u}</option>
+              ))}
+            </select>
 
-              <input
-                type="number"
-                placeholder="Pieces per unit"
-                style={inputStyle}
-                value={row.piecesPerUnit}
-                onChange={e =>
-                  updateRow(i, {
-                    piecesPerUnit: e.target.value === '' ? '' : Number(e.target.value),
-                  })
-                }
-              />
+            <input
+              type="number"
+              placeholder="Pieces per unit"
+              value={row.piecesPerUnit}
+              onChange={e =>
+                updateRow(i, {
+                  piecesPerUnit: e.target.value === '' ? '' : Number(e.target.value),
+                })
+              }
+            />
 
-              <input
-                type="number"
-                placeholder="Price"
-                style={inputStyle}
-                value={row.price}
-                onChange={e =>
-                  updateRow(i, {
-                    price: e.target.value === '' ? '' : Number(e.target.value),
-                  })
-                }
-              />
+            <input
+              type="number"
+              placeholder="Price"
+              value={row.price}
+              onChange={e =>
+                updateRow(i, {
+                  price: e.target.value === '' ? '' : Number(e.target.value),
+                })
+              }
+            />
 
-              <button
-                type="button"
-                onClick={() => removeRow(i)}
-                style={{
-                  background: '#ffdddd',
-                  border: '1px solid #d88',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
+            <button type="button" onClick={() => removeRow(i)}>
+              ✕
+            </button>
+          </div>
+        ))}
 
-          <button
-            type="button"
-            onClick={addRow}
-            style={{
-              marginTop: 12,
-              padding: '8px 14px',
-              background: '#0ea5a4',
-              color: '#fff',
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            + Add UoM
-          </button>
-        </div>
+        <button type="button" onClick={addRow}>
+          + Add UoM
+        </button>
 
-        {/* SUBMIT */}
-        <div style={{ marginTop: 24 }}>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: '12px 20px',
-              background: '#111827',
-              color: '#fff',
-              borderRadius: 8,
-              border: 'none',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            {loading ? 'Saving…' : 'Add Product'}
-          </button>
-        </div>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Saving…' : 'Add Product'}
+        </button>
       </form>
     </div>
   );

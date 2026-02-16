@@ -3,7 +3,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
-import { API_BASE } from '@/lib/api';
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '').replace(/\/api$/, '') ||
+  'http://localhost:5000';
 
 type PackagingRow = {
   name: string;
@@ -29,14 +32,15 @@ export default function EditProductPage() {
       router.push('/login');
       return;
     }
-
     fetchProduct();
   }, [productId]);
 
   async function fetchProduct() {
     try {
       const { data } = await axios.get(`${API_BASE}/api/products/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       setForm({
@@ -63,7 +67,6 @@ export default function EditProductPage() {
     }
   }
 
-  // 🔥 Auto detect smallest unit
   const baseUnit = useMemo(() => {
     if (!packagingOptions.length) return null;
     return packagingOptions.reduce((smallest, current) =>
@@ -82,11 +85,7 @@ export default function EditProductPage() {
   function addUOM() {
     setPackagingOptions(prev => [
       ...prev,
-      {
-        name: 'New Unit',
-        piecesPerUnit: 1,
-        price: 0,
-      },
+      { name: 'New Unit', piecesPerUnit: 1, price: 0 },
     ]);
   }
 
@@ -94,7 +93,6 @@ export default function EditProductPage() {
     setPackagingOptions(prev => prev.filter((_, i) => i !== index));
   }
 
-  // 🔥 Auto-calc based on smallest unit
   function autoCalculatePrices() {
     if (!baseUnit) return;
 
@@ -120,7 +118,6 @@ export default function EditProductPage() {
     e.preventDefault();
 
     const formData = new FormData();
-
     formData.append('name', form.name);
     formData.append('category', form.category);
     formData.append('stock', form.stock);
@@ -131,7 +128,9 @@ export default function EditProductPage() {
 
     try {
       await axios.put(`${API_BASE}/api/products/${productId}`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       alert('Product updated!');
@@ -148,183 +147,77 @@ export default function EditProductPage() {
 
   return (
     <div style={{ maxWidth: 1000, margin: '20px auto', padding: 20 }}>
-      {/* Back */}
-      <button
-        onClick={() => router.push('/admin/products')}
-        style={{
-          marginBottom: 20,
-          padding: '8px 16px',
-          background: '#eee',
-          borderRadius: 6,
-          border: '1px solid #ccc',
-          cursor: 'pointer',
-        }}
-      >
-        ← Back to Products
-      </button>
+      <button onClick={() => router.push('/admin/products')}>← Back to Products</button>
 
-      <h1 style={{ fontSize: 30, fontWeight: 700, marginBottom: 20 }}>Edit Product</h1>
+      <h1>Edit Product</h1>
 
       <form onSubmit={handleSubmit}>
-        {/* IMAGE */}
-        <div style={{ marginBottom: 25 }}>
-          <h3>Product Image</h3>
+        {preview && (
+          <img src={preview} style={{ width: 180, height: 180, objectFit: 'cover' }} />
+        )}
 
-          {preview && (
-            <img
-              src={preview}
-              style={{
-                width: 180,
-                height: 180,
-                objectFit: 'cover',
-                borderRadius: 10,
-                marginBottom: 10,
-              }}
+        <input type="file" onChange={handleImageChange} />
+
+        <input
+          value={form.name}
+          onChange={e => setForm({ ...form, name: e.target.value })}
+        />
+
+        <input
+          value={form.category}
+          onChange={e => setForm({ ...form, category: e.target.value })}
+        />
+
+        <input
+          type="number"
+          value={form.stock}
+          onChange={e => setForm({ ...form, stock: Number(e.target.value) })}
+        />
+
+        <textarea
+          value={form.description}
+          onChange={e => setForm({ ...form, description: e.target.value })}
+        />
+
+        {packagingOptions.map((row, i) => (
+          <div key={i}>
+            <input
+              value={row.name}
+              onChange={e => updateRow(i, { name: e.target.value })}
             />
-          )}
-
-          <input type="file" accept="image/*" onChange={handleImageChange} />
-        </div>
-
-        {/* BASIC INFO */}
-        <div style={{ marginBottom: 25 }}>
-          <input
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            placeholder="Product Name"
-          />
-
-          <input
-            value={form.category}
-            onChange={e => setForm({ ...form, category: e.target.value })}
-            placeholder="Category"
-          />
-
-          <input
-            type="number"
-            value={form.stock}
-            onChange={e => setForm({ ...form, stock: Number(e.target.value) })}
-            placeholder="Stock"
-          />
-
-          <textarea
-            value={form.description}
-            onChange={e => setForm({ ...form, description: e.target.value })}
-            placeholder="Description"
-          />
-        </div>
-
-        {/* UOM SECTION */}
-        <div style={{ marginBottom: 20 }}>
-          <h2>Units (Small → Large)</h2>
-
-          {baseUnit && (
-            <div style={{ marginBottom: 10, color: '#666' }}>
-              Base Unit: <strong>{baseUnit.name}</strong>
-            </div>
-          )}
-
-          {packagingOptions.map((row, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                gap: 10,
-                marginBottom: 8,
-                alignItems: 'center',
-              }}
-            >
-              <input
-                value={row.name}
-                onChange={e => updateRow(i, { name: e.target.value })}
-                placeholder="Unit Name"
-              />
-
-              <input
-                type="number"
-                value={row.piecesPerUnit}
-                onChange={e =>
-                  updateRow(i, {
-                    piecesPerUnit: Number(e.target.value),
-                  })
-                }
-                placeholder="Pieces"
-              />
-
-              <input
-                type="number"
-                value={row.price}
-                onChange={e =>
-                  updateRow(i, {
-                    price: Number(e.target.value),
-                  })
-                }
-                placeholder="Price"
-              />
-
-              <button
-                type="button"
-                onClick={() => deleteUOM(i)}
-                style={{
-                  background: '#ffdddd',
-                  border: '1px solid #cc0000',
-                  padding: '6px 10px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                }}
-              >
-                ✕
-              </button>
-            </div>
-          ))}
-
-          <div style={{ marginTop: 15, display: 'flex', gap: 10 }}>
-            <button
-              type="button"
-              onClick={addUOM}
-              style={{
-                padding: '8px 14px',
-                background: '#0ea5a4',
-                color: '#fff',
-                borderRadius: 6,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              + Add UOM
-            </button>
-
-            <button
-              type="button"
-              onClick={autoCalculatePrices}
-              style={{
-                padding: '8px 14px',
-                background: '#2563eb',
-                color: '#fff',
-                borderRadius: 6,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Auto Calculate Prices
+            <input
+              type="number"
+              value={row.piecesPerUnit}
+              onChange={e =>
+                updateRow(i, {
+                  piecesPerUnit: Number(e.target.value),
+                })
+              }
+            />
+            <input
+              type="number"
+              value={row.price}
+              onChange={e =>
+                updateRow(i, {
+                  price: Number(e.target.value),
+                })
+              }
+            />
+            <button type="button" onClick={() => deleteUOM(i)}>
+              ✕
             </button>
           </div>
-        </div>
+        ))}
 
-        <button
-          type="submit"
-          style={{
-            padding: '12px 20px',
-            background: '#111827',
-            color: '#fff',
-            borderRadius: 8,
-            border: 'none',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Save Changes
+        <button type="button" onClick={addUOM}>
+          + Add UOM
         </button>
+
+        <button type="button" onClick={autoCalculatePrices}>
+          Auto Calculate Prices
+        </button>
+
+        <button type="submit">Save Changes</button>
       </form>
     </div>
   );
