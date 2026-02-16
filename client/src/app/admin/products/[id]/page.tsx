@@ -27,6 +27,14 @@ export default function EditProductPage() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 8,
+    border: '1px solid #d1d5db',
+    fontSize: 14,
+  };
+
   useEffect(() => {
     if (!token) {
       router.push('/login');
@@ -46,7 +54,8 @@ export default function EditProductPage() {
       setForm({
         name: data.name,
         category: data.category,
-        stock: data.stock,
+        stock: data.stock ?? '',
+
         description: data.description || '',
       });
 
@@ -133,7 +142,7 @@ export default function EditProductPage() {
         },
       });
 
-      alert('Product updated!');
+      alert('Product updated successfully');
       router.push('/admin/products');
     } catch (err) {
       console.error(err);
@@ -142,82 +151,228 @@ export default function EditProductPage() {
   }
 
   if (loading || !form) {
-    return <div className="py-10 text-center">Loading…</div>;
+    return <div style={{ padding: 40, textAlign: 'center' }}>Loading…</div>;
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: '20px auto', padding: 20 }}>
-      <button onClick={() => router.push('/admin/products')}>← Back to Products</button>
+    <div style={{ maxWidth: 1100, margin: '40px auto', padding: 20 }}>
+      {/* Back Button */}
+      <button
+        onClick={() => router.push('/admin/products')}
+        style={{
+          marginBottom: 20,
+          padding: '8px 14px',
+          borderRadius: 6,
+          border: '1px solid #ddd',
+          background: '#f9fafb',
+          cursor: 'pointer',
+        }}
+      >
+        ← Back to Products
+      </button>
 
-      <h1>Edit Product</h1>
+      <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 20 }}>Edit Product</h1>
 
       <form onSubmit={handleSubmit}>
-        {preview && (
-          <img src={preview} style={{ width: 180, height: 180, objectFit: 'cover' }} />
-        )}
-
-        <input type="file" onChange={handleImageChange} />
-
-        <input
-          value={form.name}
-          onChange={e => setForm({ ...form, name: e.target.value })}
-        />
-
-        <input
-          value={form.category}
-          onChange={e => setForm({ ...form, category: e.target.value })}
-        />
-
-        <input
-          type="number"
-          value={form.stock}
-          onChange={e => setForm({ ...form, stock: Number(e.target.value) })}
-        />
-
-        <textarea
-          value={form.description}
-          onChange={e => setForm({ ...form, description: e.target.value })}
-        />
-
-        {packagingOptions.map((row, i) => (
-          <div key={i}>
+        {/* BASIC INFO CARD */}
+        <div
+          style={{
+            background: '#ffffff',
+            padding: 24,
+            borderRadius: 14,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            marginBottom: 30,
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 16,
+            }}
+          >
             <input
-              value={row.name}
-              onChange={e => updateRow(i, { name: e.target.value })}
+              style={inputStyle}
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              placeholder="Product Name"
             />
+
+            <input
+              style={inputStyle}
+              value={form.category}
+              onChange={e => setForm({ ...form, category: e.target.value })}
+              placeholder="Category"
+            />
+
             <input
               type="number"
-              value={row.piecesPerUnit}
+              style={inputStyle}
+              value={form.stock === 0 ? '' : form.stock}
               onChange={e =>
-                updateRow(i, {
-                  piecesPerUnit: Number(e.target.value),
+                setForm({
+                  ...form,
+                  stock: e.target.value === '' ? '' : Number(e.target.value),
                 })
               }
+              placeholder="Stock"
             />
-            <input
-              type="number"
-              value={row.price}
-              onChange={e =>
-                updateRow(i, {
-                  price: Number(e.target.value),
-                })
-              }
+
+            <div />
+
+            <textarea
+              style={{
+                ...inputStyle,
+                gridColumn: '1 / -1',
+                minHeight: 90,
+              }}
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              placeholder="Description"
             />
-            <button type="button" onClick={() => deleteUOM(i)}>
-              ✕
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              {preview && (
+                <img
+                  src={preview}
+                  style={{
+                    width: 180,
+                    height: 180,
+                    objectFit: 'cover',
+                    borderRadius: 10,
+                    marginBottom: 10,
+                  }}
+                />
+              )}
+
+              <input type="file" accept="image/*" onChange={handleImageChange} />
+            </div>
+          </div>
+        </div>
+
+        {/* UOM CARD */}
+        <div
+          style={{
+            background: '#ffffff',
+            padding: 24,
+            borderRadius: 14,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+          }}
+        >
+          <h2 style={{ fontWeight: 700, marginBottom: 10 }}>Packaging / Units (UoM)</h2>
+
+          {baseUnit && (
+            <div style={{ marginBottom: 16, color: '#666' }}>
+              Base Unit: <strong>{baseUnit.name}</strong>
+            </div>
+          )}
+
+          {packagingOptions.map((row, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr auto',
+                gap: 10,
+                marginBottom: 12,
+              }}
+            >
+              <input
+                style={inputStyle}
+                value={row.name}
+                onChange={e => updateRow(i, { name: e.target.value })}
+                placeholder="Unit Name"
+              />
+
+              <input
+                type="number"
+                style={inputStyle}
+                value={row.piecesPerUnit}
+                onChange={e =>
+                  updateRow(i, {
+                    piecesPerUnit: Number(e.target.value),
+                  })
+                }
+                placeholder="Pieces per unit"
+              />
+
+              <input
+                type="number"
+                style={inputStyle}
+                value={row.price}
+                onChange={e =>
+                  updateRow(i, {
+                    price: Number(e.target.value),
+                  })
+                }
+                placeholder="Price"
+              />
+
+              <button
+                type="button"
+                onClick={() => deleteUOM(i)}
+                style={{
+                  background: '#ffe2e2',
+                  border: '1px solid #ff9b9b',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <div style={{ marginTop: 10, display: 'flex', gap: 10 }}>
+            <button
+              type="button"
+              onClick={addUOM}
+              style={{
+                padding: '8px 16px',
+                background: '#0ea5a4',
+                color: '#fff',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              + Add UoM
+            </button>
+
+            <button
+              type="button"
+              onClick={autoCalculatePrices}
+              style={{
+                padding: '8px 16px',
+                background: '#2563eb',
+                color: '#fff',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Auto Calculate Prices
             </button>
           </div>
-        ))}
+        </div>
 
-        <button type="button" onClick={addUOM}>
-          + Add UOM
-        </button>
-
-        <button type="button" onClick={autoCalculatePrices}>
-          Auto Calculate Prices
-        </button>
-
-        <button type="submit">Save Changes</button>
+        {/* SUBMIT */}
+        <div style={{ marginTop: 30 }}>
+          <button
+            type="submit"
+            style={{
+              padding: '12px 24px',
+              background: '#111827',
+              color: '#fff',
+              borderRadius: 10,
+              border: 'none',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Save Changes
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -40,11 +40,18 @@ export default function AdminNewProductPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [packagingOptions, setPackagingOptions] = useState<PackagingRow[]>([
-    { name: 'Pkt', piecesPerUnit: '', price: '', defaultForSale: true },
-    { name: 'Carton', piecesPerUnit: '', price: '' },
+    { name: 'Pcs', piecesPerUnit: '', price: '', defaultForSale: true },
   ]);
 
   const [loading, setLoading] = useState(false);
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 8,
+    border: '1px solid #d1d5db',
+    fontSize: 14,
+  };
 
   function addRow() {
     setPackagingOptions(prev => [...prev, { name: 'Pcs', piecesPerUnit: '', price: '' }]);
@@ -99,7 +106,7 @@ export default function AdminNewProductPage() {
         },
       });
 
-      alert('Product created');
+      alert('Product created successfully');
       router.push('/admin/products');
     } catch (err) {
       console.error(err);
@@ -110,100 +117,202 @@ export default function AdminNewProductPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '20px auto', padding: 20 }}>
-      <button onClick={() => router.push('/admin/products')}>← Back to Products</button>
+    <div style={{ maxWidth: 1100, margin: '40px auto', padding: 20 }}>
+      {/* Back Button */}
+      <button
+        onClick={() => router.push('/admin/products')}
+        style={{
+          marginBottom: 20,
+          padding: '8px 14px',
+          borderRadius: 6,
+          border: '1px solid #ddd',
+          background: '#f9fafb',
+          cursor: 'pointer',
+        }}
+      >
+        ← Back to Products
+      </button>
 
-      <h1>Add New Product</h1>
+      <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 20 }}>Add New Product</h1>
 
       <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Product Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
+        {/* BASIC INFO CARD */}
+        <div
+          style={{
+            background: '#ffffff',
+            padding: 24,
+            borderRadius: 14,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            marginBottom: 30,
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 16,
+            }}
+          >
+            <input
+              style={inputStyle}
+              placeholder="Product Name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+            />
 
-        <input
-          placeholder="Category"
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-        />
-
-        <input
-          type="number"
-          placeholder="Fallback Price"
-          value={price}
-          onChange={e => setPrice(e.target.value === '' ? '' : Number(e.target.value))}
-        />
-
-        <input
-          type="number"
-          placeholder="Stock"
-          value={stock}
-          onChange={e => setStock(e.target.value === '' ? '' : Number(e.target.value))}
-        />
-
-        <textarea
-          placeholder="Description"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-        />
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={e => setImageFile(e.target.files?.[0] || null)}
-        />
-
-        {packagingOptions.map((row, i) => (
-          <div key={i}>
-            <select
-              value={row.name}
-              onChange={e =>
-                updateRow(i, {
-                  name: e.target.value,
-                })
-              }
-            >
-              {UOM_PRESETS.map(u => (
-                <option key={u}>{u}</option>
-              ))}
-            </select>
+            <input
+              style={inputStyle}
+              placeholder="Category"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              required
+            />
 
             <input
               type="number"
-              placeholder="Pieces per unit"
-              value={row.piecesPerUnit}
+              style={inputStyle}
+              placeholder="Fallback Price"
+              value={price}
               onChange={e =>
-                updateRow(i, {
-                  piecesPerUnit: e.target.value === '' ? '' : Number(e.target.value),
-                })
+                setPrice(e.target.value === '' ? '' : Number(e.target.value))
               }
             />
 
             <input
               type="number"
-              placeholder="Price"
-              value={row.price}
+              style={inputStyle}
+              placeholder="Stock"
+              value={stock}
               onChange={e =>
-                updateRow(i, {
-                  price: e.target.value === '' ? '' : Number(e.target.value),
-                })
+                setStock(e.target.value === '' ? '' : Number(e.target.value))
               }
             />
 
-            <button type="button" onClick={() => removeRow(i)}>
-              ✕
-            </button>
+            <textarea
+              style={{
+                ...inputStyle,
+                gridColumn: '1 / -1',
+                minHeight: 90,
+              }}
+              placeholder="Description"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setImageFile(e.target.files?.[0] || null)}
+            />
           </div>
-        ))}
+        </div>
 
-        <button type="button" onClick={addRow}>
-          + Add UoM
-        </button>
+        {/* UOM CARD */}
+        <div
+          style={{
+            background: '#ffffff',
+            padding: 24,
+            borderRadius: 14,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+          }}
+        >
+          <h2 style={{ fontWeight: 700, marginBottom: 18 }}>Packaging / Units (UoM)</h2>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Saving…' : 'Add Product'}
-        </button>
+          {packagingOptions.map((row, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr auto',
+                gap: 10,
+                marginBottom: 12,
+              }}
+            >
+              <select
+                value={row.name}
+                onChange={e => updateRow(i, { name: e.target.value })}
+                style={inputStyle}
+              >
+                {UOM_PRESETS.map(u => (
+                  <option key={u}>{u}</option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                placeholder="Pieces per unit"
+                style={inputStyle}
+                value={row.piecesPerUnit}
+                onChange={e =>
+                  updateRow(i, {
+                    piecesPerUnit: e.target.value === '' ? '' : Number(e.target.value),
+                  })
+                }
+              />
+
+              <input
+                type="number"
+                placeholder="Price"
+                style={inputStyle}
+                value={row.price}
+                onChange={e =>
+                  updateRow(i, {
+                    price: e.target.value === '' ? '' : Number(e.target.value),
+                  })
+                }
+              />
+
+              <button
+                type="button"
+                onClick={() => removeRow(i)}
+                style={{
+                  background: '#ffe2e2',
+                  border: '1px solid #ff9b9b',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addRow}
+            style={{
+              marginTop: 10,
+              padding: '8px 16px',
+              background: '#0ea5a4',
+              color: '#fff',
+              borderRadius: 8,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            + Add UoM
+          </button>
+        </div>
+
+        {/* SUBMIT */}
+        <div style={{ marginTop: 30 }}>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              padding: '12px 24px',
+              background: '#111827',
+              color: '#fff',
+              borderRadius: 10,
+              border: 'none',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {loading ? 'Saving…' : 'Add Product'}
+          </button>
+        </div>
       </form>
     </div>
   );
