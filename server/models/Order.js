@@ -28,10 +28,31 @@ const orderSchema = new mongoose.Schema(
 
     items: [orderItemSchema],
 
-    customerName: String,
-    phone: String,
-    county: String,
-    subcounty: String,
+    customerName: {
+      type: String,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+    },
+
+    county: {
+      type: String,
+      trim: true,
+    },
+
+    subcounty: {
+      type: String,
+      trim: true,
+    },
+
+    // ✅ NEW FIELD ADDED
+    area: {
+      type: String,
+      trim: true,
+    },
 
     paymentMethod: {
       type: String,
@@ -39,7 +60,7 @@ const orderSchema = new mongoose.Schema(
     },
 
     paymentReference: {
-      type: String, // ✅ NEW
+      type: String,
       trim: true,
     },
 
@@ -49,7 +70,10 @@ const orderSchema = new mongoose.Schema(
       default: 'pending',
     },
 
-    totalAmount: Number,
+    totalAmount: {
+      type: Number,
+      required: true,
+    },
   },
   { timestamps: true }
 );
