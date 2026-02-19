@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { resolveImageUrl } from '@/lib/image';
+import { API_BASE_URL } from '@/lib/api';
 
 /* =======================
    TYPES
@@ -26,8 +27,6 @@ type Product = {
   packagingOptions?: PackagingOption[];
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-
 export default function ProductDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -44,7 +43,8 @@ export default function ProductDetailsPage() {
   ======================= */
   useEffect(() => {
     axios
-      .get(`${API_BASE}/api/products/${id}`)
+      .get(`${API_BASE_URL}/products/${id}`)
+
       .then(res => {
         setProduct(res.data);
         setSelectedUom(res.data.packagingOptions?.[0] ?? null);

@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Stats {
   products: number;
@@ -22,7 +21,7 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    fetch(`${API_BASE}/api/admin/stats`, {
+    fetch(`${API_BASE_URL}/admin/stats`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

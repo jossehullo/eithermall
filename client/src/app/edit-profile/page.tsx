@@ -5,6 +5,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import AvatarCropper from '@/components/AvatarCropper';
+import { API_BASE_URL } from '@/lib/api';
 
 type User = {
   username: string;
@@ -12,8 +13,6 @@ type User = {
   phone?: string;
   avatar?: string;
 };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -38,7 +37,7 @@ export default function EditProfilePage() {
     }
 
     axios
-      .get(`${API_BASE}/api/auth/profile`, {
+      .get(`${API_BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(({ data }) => {
@@ -120,7 +119,7 @@ export default function EditProfilePage() {
         formData.append('avatar', avatarFile);
       }
 
-      const { data } = await axios.put(`${API_BASE}/api/auth/profile`, formData, {
+      const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

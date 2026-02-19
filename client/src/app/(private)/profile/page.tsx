@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -10,8 +11,6 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState('/default-avatar.png');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -22,7 +21,7 @@ export default function ProfilePage() {
 
     const loadProfile = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE}/api/auth/profile`, {
+        const { data } = await axios.get(`${API_BASE_URL}/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

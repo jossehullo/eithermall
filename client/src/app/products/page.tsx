@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { resolveImageUrl } from '@/lib/image';
+import { API_BASE_URL } from '@/lib/api';
 
 /* =======================
    TYPES
@@ -27,7 +28,6 @@ type Product = {
   packagingOptions?: PackagingOption[];
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const ITEMS_PER_PAGE = 8;
 
 export default function ProductsPage() {
@@ -52,7 +52,8 @@ export default function ProductsPage() {
   ======================= */
   useEffect(() => {
     axios
-      .get(`${API_BASE}/api/products`)
+      .get(`${API_BASE_URL}/products`)
+
       .then(res => setProducts(Array.isArray(res.data) ? res.data : []))
       .catch(() => setProducts([]));
   }, []);

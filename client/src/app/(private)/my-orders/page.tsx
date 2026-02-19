@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '@/lib/api';
 
 /* ================= TYPES ================= */
 
@@ -42,7 +41,7 @@ export default function MyOrdersPage() {
       return;
     }
 
-    fetch(`${API_BASE_URL}/api/orders/my`, {
+    fetch(`${API_BASE_URL}/orders/my`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
