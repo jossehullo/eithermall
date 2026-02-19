@@ -3,10 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '').replace(/\/api$/, '') ||
-  'http://localhost:5000';
+import { API_BASE_URL } from '@/lib/api';
 
 type PackagingRow = {
   name: string;
@@ -45,7 +42,7 @@ export default function EditProductPage() {
 
   async function fetchProduct() {
     try {
-      const { data } = await axios.get(`${API_BASE}/api/products/${productId}`, {
+      const { data } = await axios.get(`${API_BASE_URL}/products/${productId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -60,7 +57,11 @@ export default function EditProductPage() {
       });
 
       if (data.image) {
-        setPreview(`${API_BASE}/${data.image}`);
+        setPreview(
+          data.image?.startsWith('http')
+            ? data.image
+            : `${API_BASE_URL.replace('/api', '')}/${data.image}`
+        );
       }
 
       const sorted = (data.packagingOptions || []).sort(
@@ -136,7 +137,7 @@ export default function EditProductPage() {
     if (image) formData.append('image', image);
 
     try {
-      await axios.put(`${API_BASE}/api/products/${productId}`, formData, {
+      await axios.put(`${API_BASE_URL}/products/${productId}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

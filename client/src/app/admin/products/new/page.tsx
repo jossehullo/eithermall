@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api';
 
 type PackagingRow = {
   name: string;
@@ -24,10 +25,6 @@ const UOM_PRESETS = [
   'Pc(s)',
   'Other',
 ];
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '').replace(/\/api$/, '') ||
-  'http://localhost:5000';
 
 export default function AdminNewProductPage() {
   const router = useRouter();
@@ -99,7 +96,7 @@ export default function AdminNewProductPage() {
     setLoading(true);
 
     try {
-      await axios.post(`${API_BASE}/api/products`, fd, {
+      await axios.post(`${API_BASE_URL}/products`, fd, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           'Content-Type': 'multipart/form-data',

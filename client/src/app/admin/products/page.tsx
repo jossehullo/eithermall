@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const ITEMS_PER_PAGE = 8;
 
 export default function AdminProductsPage() {
@@ -31,7 +31,7 @@ export default function AdminProductsPage() {
 
   async function fetchProducts() {
     try {
-      const { data } = await axios.get(`${API_BASE}/api/products`, {
+      const { data } = await axios.get(`${API_BASE_URL}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -48,7 +48,7 @@ export default function AdminProductsPage() {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`${API_BASE}/api/products/${id}`, {
+      await axios.delete(`${API_BASE_URL}/products/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

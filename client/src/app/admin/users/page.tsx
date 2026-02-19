@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const ITEMS_PER_PAGE = 8;
 
 interface AdminUser {
@@ -36,7 +36,7 @@ export default function AdminUsersPage() {
     if (!token) return setLoading(false);
 
     axios
-      .get(`${API_BASE}/api/users`, {
+      .get(`${API_BASE_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then(res => setUsers(res.data))
@@ -46,7 +46,7 @@ export default function AdminUsersPage() {
   async function promote(id: string) {
     try {
       const res = await axios.patch(
-        `${API_BASE}/api/users/${id}/make-admin`,
+        `${API_BASE_URL}/users/${id}/make-admin`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -60,7 +60,7 @@ export default function AdminUsersPage() {
   async function demote(id: string) {
     try {
       const res = await axios.patch(
-        `${API_BASE}/api/users/${id}/remove-admin`,
+        `${API_BASE_URL}/users/${id}/remove-admin`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
     if (!confirm('Delete this user?')) return;
 
     try {
-      await axios.delete(`${API_BASE}/api/users/${id}`, {
+      await axios.delete(`${API_BASE_URL}/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
