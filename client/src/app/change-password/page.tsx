@@ -4,8 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -46,7 +45,7 @@ export default function ChangePasswordPage() {
       setLoading(true);
 
       await axios.put(
-        `${API_BASE}/api/auth/change-password`,
+        `${API_BASE_URL}/auth/change-password`,
         {
           currentPassword,
           newPassword,
