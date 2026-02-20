@@ -17,7 +17,7 @@ router.post('/', protect, async (req, res) => {
       phone,
       county,
       subcounty,
-      area, // ✅ NEW FIELD RECEIVED
+      area,
       paymentMethod,
       totalAmount,
       paymentReference,
@@ -73,7 +73,7 @@ router.post('/', protect, async (req, res) => {
       phone,
       county,
       subcounty,
-      area, // ✅ SAVED TO DB
+      area,
       paymentMethod,
       paymentReference,
       totalAmount,
@@ -161,6 +161,27 @@ router.patch('/:id/status', protect, adminOnly, async (req, res) => {
   } catch (err) {
     console.error('Update order status error:', err);
     res.status(500).json({ message: 'Failed to update status' });
+  }
+});
+
+/* ============================
+   ADMIN: DELETE ORDER
+   DELETE /orders/:id
+============================ */
+router.delete('/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    await order.deleteOne();
+
+    res.status(200).json({ message: 'Order deleted successfully' });
+  } catch (err) {
+    console.error('Delete order error:', err);
+    res.status(500).json({ message: 'Failed to delete order' });
   }
 });
 
