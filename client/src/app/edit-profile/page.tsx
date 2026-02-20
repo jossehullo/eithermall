@@ -11,7 +11,7 @@ type User = {
   username: string;
   email: string;
   phone?: string;
-  avatar?: string;
+  avatarUrl?: string;
 };
 
 export default function EditProfilePage() {
@@ -52,8 +52,8 @@ export default function EditProfilePage() {
 
         // ✅ Cloudinary full URL
         setAvatarPreview(
-          userData.avatar && userData.avatar.startsWith('http')
-            ? userData.avatar
+          userData.avatarUrl && userData.avatarUrl.startsWith('http')
+            ? userData.avatarUrl
             : '/default-avatar.png'
         );
       })
@@ -133,8 +133,8 @@ export default function EditProfilePage() {
       });
 
       setAvatarPreview(
-        updated.avatar && updated.avatar.startsWith('http')
-          ? updated.avatar
+        updated.avatarUrl && updated.avatarUrl.startsWith('http')
+          ? updated.avatarUrl
           : '/default-avatar.png'
       );
 
