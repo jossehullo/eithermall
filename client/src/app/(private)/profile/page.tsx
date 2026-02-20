@@ -30,7 +30,9 @@ export default function ProfilePage() {
 
         // ✅ Cloudinary URL already full
         setAvatarPreview(
-          u.avatar && u.avatar.startsWith('http') ? u.avatar : '/default-avatar.png'
+          u.avatarUrl && u.avatarUrl.startsWith('http')
+            ? u.avatarUrl
+            : '/default-avatar.png'
         );
       } catch (err: any) {
         const msg = err.response?.data?.message?.toLowerCase() || '';
