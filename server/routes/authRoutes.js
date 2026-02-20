@@ -189,6 +189,9 @@ router.put('/profile', uploadAvatar.single('avatar'), async (req, res) => {
 /* =========================
    CHANGE PASSWORD
 ========================= */
+/* =========================
+   CHANGE PASSWORD
+========================= */
 router.put('/change-password', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -215,10 +218,10 @@ router.put('/change-password', async (req, res) => {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    // ✅ DO NOT HASH HERE
+    user.password = newPassword;
 
-    await user.save();
+    await user.save(); // pre-save hook hashes it once
 
     res.status(200).json({ message: 'Password updated successfully' });
   } catch (error) {
