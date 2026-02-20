@@ -1,11 +1,13 @@
 // server/server.js
 
 import dotenv from 'dotenv';
-dotenv.config(); // this is enough since you run from /server
+dotenv.config();
 
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
 
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -67,7 +69,7 @@ app.use((req, res) => {
 });
 
 /* =========================
-   DATABASE CONNECTION
+   DATABASE CONNECTION + SOCKET SETUP
 ========================= */
 
 const PORT = process.env.PORT || 5000;
@@ -82,7 +84,24 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB Connected');
-    app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+
+    const server = http.createServer(app);
+
+    const io = new Server(server, {
+      cors: {
+        origin: ['http://localhost:3000', 'https://eithermall.vercel.app'],
+      },
+    });
+
+    app.set('io', io);
+
+    io.on('connection', socket => {
+      console.log('🔌 Admin connected:', socket.id);
+    });
+
+    server.listen(PORT, () =>
+      console.log(`🚀 Server running on http://localhost:${PORT}`)
+    );
   })
   .catch(err => {
     console.error('❌ MongoDB error:', err.message);

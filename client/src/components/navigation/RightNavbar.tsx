@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react'; // ✅ ADDED
+import { io, Socket } from 'socket.io-client'; // ✅ ADDED
+import { API_BASE_URL } from '@/lib/api'; // ✅ ADDED
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 
@@ -19,6 +22,8 @@ export default function RightNavbar() {
   const { user, logout } = useAuth();
   const { cartItems } = useCart();
 
+  const [newOrdersCount, setNewOrdersCount] = useState(0); // ✅ ADDED
+
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
   const linkStyle = (path: string) =>
@@ -28,6 +33,32 @@ export default function RightNavbar() {
       isActive(path) ? 'bg-black text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
     }
   `;
+
+  /* ================= SOCKET FOR ADMIN ================= */
+  useEffect(() => {
+    if (user?.role !== 'admin') return; // 👑 Only admins
+
+    const socket: Socket = io(API_BASE_URL.replace('/api', ''));
+
+    socket.on('newOrder', () => {
+      setNewOrdersCount(prev => prev + 1);
+
+      // 🔊 Play sound
+      const audio = new Audio('/notification.mp3');
+      audio.play().catch(() => {});
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]);
+
+  /* ================= RESET BADGE WHEN VISITING ADMIN ================= */
+  useEffect(() => {
+    if (pathname.startsWith('/admin')) {
+      setNewOrdersCount(0);
+    }
+  }, [pathname]);
 
   return (
     <nav
@@ -74,9 +105,21 @@ export default function RightNavbar() {
         )}
 
         {user?.role === 'admin' && (
-          <Link href="/admin" className={linkStyle('/admin')}>
+          <Link href="/admin" className={`relative ${linkStyle('/admin')}`}>
             <AdminIcon />
             <span>Admin</span>
+
+            {/* 🔴 NEW ORDER BADGE */}
+            {newOrdersCount > 0 && (
+              <span
+                className="absolute -top-2 -right-3 
+                           bg-red-500 text-white text-xs 
+                           px-2 py-[2px] rounded-full
+                           animate-pulse"
+              >
+                {newOrdersCount}
+              </span>
+            )}
           </Link>
         )}
 

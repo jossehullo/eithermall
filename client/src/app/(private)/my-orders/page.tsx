@@ -162,6 +162,46 @@ export default function MyOrdersPage() {
             >
               Total: KSh {order.totalAmount.toLocaleString()}
             </div>
+
+            {/* VIEW RECEIPT BUTTON */}
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    const token = localStorage.getItem('token');
+                    if (!token) return;
+
+                    const res = await fetch(
+                      `${API_BASE_URL}/orders/${order._id}/receipt`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
+
+                    if (!res.ok) throw new Error();
+
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                  } catch {
+                    toast.error('Failed to load receipt');
+                  }
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 20,
+                  border: 'none',
+                  background: '#000',
+                  color: '#fff',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                View Receipt
+              </button>
+            </div>
           </div>
         ))
       )}
