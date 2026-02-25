@@ -32,7 +32,12 @@ if (process.env.NODE_ENV !== 'production') {
 
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'https://eithermall.vercel.app'],
+    origin: [
+      'http://localhost:3000',
+      'https://eithermall.vercel.app',
+      'https://www.eithermall.com',
+      'https://eithermall.com',
+    ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,
@@ -89,7 +94,12 @@ mongoose
 
     const io = new Server(server, {
       cors: {
-        origin: ['http://localhost:3000', 'https://eithermall.vercel.app'],
+        origin: [
+          'http://localhost:3000',
+          'https://eithermall.vercel.app',
+          'https://eithermall.com',
+          'https://www.eithermall.com',
+        ],
       },
     });
 
