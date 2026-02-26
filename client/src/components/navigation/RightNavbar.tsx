@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -18,7 +18,7 @@ import LogoutIcon from '@/components/icons/LogoutIcon';
 import AdminIcon from '@/components/icons/AdminIcon';
 
 export default function RightNavbar() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const { user, logout } = useAuth();
   const { cartItems } = useCart();
   const [newOrdersCount, setNewOrdersCount] = useState(0);
@@ -33,14 +33,17 @@ export default function RightNavbar() {
   useEffect(() => {
     if (user?.role !== 'admin') return;
 
-    const socket: Socket = io(API_BASE_URL.replace('/api', ''));
+    const socket = io(API_BASE_URL.replace('/api', ''));
 
     socket.on('newOrder', () => {
       setNewOrdersCount(prev => prev + 1);
     });
 
-    return () => socket.disconnect();
-  }, [user]);
+    // ✅ Proper cleanup (returns void)
+    return () => {
+      socket.disconnect();
+    };
+  }, [user?.role]);
 
   useEffect(() => {
     if (pathname.startsWith('/admin')) {
@@ -65,7 +68,7 @@ export default function RightNavbar() {
           Eithermall
         </Link>
 
-        {/* NAV LINKS (Scrollable on small screens) */}
+        {/* NAV LINKS */}
         <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar">
           <Link href="/" className={linkStyle('/')}>
             <HomeIcon />
@@ -113,7 +116,6 @@ export default function RightNavbar() {
                 <span className="hidden sm:inline">Profile</span>
               </Link>
 
-              {/* ✅ Logout always visible */}
               <button
                 onClick={logout}
                 className="flex items-center gap-1 px-3 py-2 rounded-full
