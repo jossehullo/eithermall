@@ -10,9 +10,18 @@ const orderItemSchema = new mongoose.Schema(
     },
     name: String,
     unitName: String,
-    piecesPerUnit: Number,
-    qty: Number,
-    unitPrice: Number,
+    piecesPerUnit: {
+      type: Number,
+      default: 1,
+    },
+    qty: {
+      type: Number,
+      required: true,
+    },
+    unitPrice: {
+      type: Number,
+      required: true,
+    },
     image: String,
   },
   { _id: false }
@@ -24,9 +33,13 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true, // 🔥 faster lookups
     },
 
-    items: [orderItemSchema],
+    items: {
+      type: [orderItemSchema],
+      required: true,
+    },
 
     customerName: {
       type: String,
@@ -48,7 +61,6 @@ const orderSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // ✅ NEW FIELD ADDED
     area: {
       type: String,
       trim: true,
@@ -66,8 +78,15 @@ const orderSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['pending', 'paid', 'ready_for_delivery', 'delivered'],
+      enum: [
+        'pending',
+        'paid',
+        'ready_for_delivery',
+        'delivered',
+        'cancelled', // ✅ now valid
+      ],
       default: 'pending',
+      index: true, // 🔥 improves admin filtering performance
     },
 
     totalAmount: {

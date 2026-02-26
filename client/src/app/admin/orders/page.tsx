@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '@/lib/api';
-import { io, Socket } from 'socket.io-client'; // ✅ ADDED
+import { io } from 'socket.io-client';
 
 type OrderItem = {
   productId?: string;
@@ -21,7 +21,7 @@ type Order = {
   totalAmount: number;
   paymentMethod: 'equity' | 'kcb';
   paymentReference?: string;
-  status: 'pending' | 'paid' | 'ready_for_delivery' | 'delivered';
+  status: 'pending' | 'paid' | 'ready_for_delivery' | 'delivered' | 'cancelled';
   createdAt: string;
   customerName?: string;
   phone?: string;
@@ -42,7 +42,7 @@ export default function AdminOrdersPage() {
   const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
   const [page, setPage] = useState(1);
 
-  /* ================= FETCH FUNCTION ================= */
+  /* ================= FETCH ================= */
   const fetchOrders = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -56,7 +56,6 @@ export default function AdminOrdersPage() {
     setOrders(data);
   };
 
-  /* ================= INITIAL LOAD ================= */
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -69,9 +68,9 @@ export default function AdminOrdersPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  /* ================= 🔔 REAL-TIME SOCKET ================= */
+  /* ================= SOCKET ================= */
   useEffect(() => {
-    const socket: Socket = io(API_BASE_URL.replace('/api', ''));
+    const socket = io(API_BASE_URL.replace('/api', ''));
 
     socket.on('newOrder', (newOrder: Order) => {
       setOrders(prev => [newOrder, ...prev]);
@@ -83,18 +82,12 @@ export default function AdminOrdersPage() {
     };
   }, []);
 
-  /* ================= ⏱ AUTO REFRESH (FALLBACK) ================= */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchOrders().catch(() => {});
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  /* ================= FILTER + SORT ================= */
+  /* ================= FILTER ================= */
   const processed = useMemo(() => {
     let filtered = orders.filter(order => {
+      // ❌ Hide cancelled orders completely
+      if (order.status === 'cancelled') return false;
+
       const matchesSearch =
         order.customerName?.toLowerCase().includes(search.toLowerCase()) ||
         order.phone?.includes(search);
@@ -114,10 +107,9 @@ export default function AdminOrdersPage() {
   }, [orders, search, statusFilter, sort]);
 
   const totalPages = Math.ceil(processed.length / ITEMS_PER_PAGE);
-
   const paginated = processed.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  /* ================= STATUS UPDATE ================= */
+  /* ================= UPDATE STATUS ================= */
   async function updateStatus(orderId: string, newStatus: Order['status']) {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -149,32 +141,35 @@ export default function AdminOrdersPage() {
     }
   }
 
-  /* ================= DELETE ================= */
-  async function deleteOrder(orderId: string) {
-    if (!confirm('Delete this order?')) return;
+  /* ================= CANCEL ORDER ================= */
+  async function cancelOrder(orderId: string) {
+    if (!confirm('Cancel this order and restore stock?')) return;
 
     const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message);
+      }
 
-      setOrders(prev => prev.filter(o => o._id !== orderId));
-      toast.success('Order deleted');
-    } catch {
-      toast.error('Failed to delete order');
+      const updated = await res.json();
+      setOrders(prev => prev.map(o => (o._id === updated._id ? updated : o)));
+
+      toast.success('Order cancelled & stock restored');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel order');
     }
   }
 
   if (loading) {
-    return <p style={{ padding: 24 }}>Loading orders...</p>;
+    return <div style={{ padding: 24 }}>Loading orders...</div>;
   }
 
   return (
@@ -194,9 +189,6 @@ export default function AdminOrdersPage() {
       </button>
 
       <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 20 }}>Admin Orders</h1>
-
-      {/* Everything below remains exactly as your original UI */}
-      {/* Search, Filter, Cards, Pagination unchanged */}
 
       {paginated.map(order => (
         <div
@@ -247,26 +239,47 @@ export default function AdminOrdersPage() {
           </div>
 
           {order.status === 'pending' && (
-            <input
-              type="text"
-              placeholder="Payment reference (Paybill / Bank)"
-              value={paymentRefs[order._id] || ''}
-              onChange={e =>
-                setPaymentRefs(prev => ({
-                  ...prev,
-                  [order._id]: e.target.value,
-                }))
-              }
-              style={{
-                width: '100%',
-                padding: 8,
-                marginTop: 10,
-              }}
-            />
+            <>
+              <input
+                type="text"
+                placeholder="Payment reference"
+                value={paymentRefs[order._id] || ''}
+                onChange={e =>
+                  setPaymentRefs(prev => ({
+                    ...prev,
+                    [order._id]: e.target.value,
+                  }))
+                }
+                style={{
+                  width: '100%',
+                  padding: 8,
+                  marginTop: 10,
+                }}
+              />
+
+              <button
+                onClick={() => cancelOrder(order._id)}
+                style={{
+                  marginTop: 10,
+                  background: '#f59e0b',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel Order
+              </button>
+            </>
           )}
 
           <div
-            style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: 10,
+            }}
           >
             <select
               value={order.status}
@@ -278,20 +291,6 @@ export default function AdminOrdersPage() {
               <option value="ready_for_delivery">Ready for delivery</option>
               <option value="delivered">Delivered</option>
             </select>
-
-            <button
-              onClick={() => deleteOrder(order._id)}
-              style={{
-                background: '#ffdddd',
-                border: '1px solid #d88',
-                color: '#d00',
-                cursor: 'pointer',
-                padding: '6px 12px',
-                borderRadius: 6,
-              }}
-            >
-              Delete
-            </button>
           </div>
         </div>
       ))}

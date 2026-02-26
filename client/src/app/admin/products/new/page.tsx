@@ -35,11 +35,9 @@ export default function AdminNewProductPage() {
   const [stock, setStock] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-
   const [packagingOptions, setPackagingOptions] = useState<PackagingRow[]>([
     { name: 'Pcs', piecesPerUnit: '', price: '', defaultForSale: true },
   ]);
-
   const [loading, setLoading] = useState(false);
 
   const inputStyle: React.CSSProperties = {
@@ -69,10 +67,6 @@ export default function AdminNewProductPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!name.trim() || !category.trim()) {
-      return alert('Please fill name and category');
-    }
-
     const cleaned = packagingOptions.map(p => ({
       name: p.name === 'Other' ? (p.customName || '').trim() : p.name,
       piecesPerUnit: Number(p.piecesPerUnit) || 1,
@@ -88,10 +82,9 @@ export default function AdminNewProductPage() {
     fd.append('stock', String(stock || 0));
     fd.append('description', description);
     fd.append('packagingOptions', JSON.stringify(cleaned));
-
     if (imageFile) fd.append('image', imageFile);
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = localStorage.getItem('token');
 
     setLoading(true);
 
@@ -103,53 +96,27 @@ export default function AdminNewProductPage() {
         },
       });
 
-      alert('Product created successfully');
       router.push('/admin/products');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to create product');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '40px auto', padding: 20 }}>
-      {/* Back Button */}
+    <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
       <button
         onClick={() => router.push('/admin/products')}
-        style={{
-          marginBottom: 20,
-          padding: '8px 14px',
-          borderRadius: 6,
-          border: '1px solid #ddd',
-          background: '#f9fafb',
-          cursor: 'pointer',
-        }}
+        className="mb-6 px-4 py-2 rounded border bg-gray-100 hover:bg-gray-200"
       >
         ← Back to Products
       </button>
 
-      <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 20 }}>Add New Product</h1>
+      <h1 className="text-3xl font-bold mb-6">Add New Product</h1>
 
       <form onSubmit={handleSubmit}>
-        {/* BASIC INFO CARD */}
-        <div
-          style={{
-            background: '#ffffff',
-            padding: 24,
-            borderRadius: 14,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-            marginBottom: 30,
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 16,
-            }}
-          >
+        {/* BASIC INFO */}
+        <div className="bg-white p-6 rounded-xl shadow mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               style={inputStyle}
               placeholder="Product Name"
@@ -157,7 +124,6 @@ export default function AdminNewProductPage() {
               onChange={e => setName(e.target.value)}
               required
             />
-
             <input
               style={inputStyle}
               placeholder="Category"
@@ -165,7 +131,6 @@ export default function AdminNewProductPage() {
               onChange={e => setCategory(e.target.value)}
               required
             />
-
             <input
               type="number"
               style={inputStyle}
@@ -175,7 +140,6 @@ export default function AdminNewProductPage() {
                 setPrice(e.target.value === '' ? '' : Number(e.target.value))
               }
             />
-
             <input
               type="number"
               style={inputStyle}
@@ -187,11 +151,7 @@ export default function AdminNewProductPage() {
             />
 
             <textarea
-              style={{
-                ...inputStyle,
-                gridColumn: '1 / -1',
-                minHeight: 90,
-              }}
+              style={{ ...inputStyle, gridColumn: '1 / -1', minHeight: 90 }}
               placeholder="Description"
               value={description}
               onChange={e => setDescription(e.target.value)}
@@ -205,27 +165,12 @@ export default function AdminNewProductPage() {
           </div>
         </div>
 
-        {/* UOM CARD */}
-        <div
-          style={{
-            background: '#ffffff',
-            padding: 24,
-            borderRadius: 14,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-          }}
-        >
-          <h2 style={{ fontWeight: 700, marginBottom: 18 }}>Packaging / Units (UoM)</h2>
+        {/* UOM */}
+        <div className="bg-white p-6 rounded-xl shadow">
+          <h2 className="font-bold mb-4">Packaging / Units (UoM)</h2>
 
           {packagingOptions.map((row, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr auto',
-                gap: 10,
-                marginBottom: 12,
-              }}
-            >
+            <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
               <select
                 value={row.name}
                 onChange={e => updateRow(i, { name: e.target.value })}
@@ -263,12 +208,7 @@ export default function AdminNewProductPage() {
               <button
                 type="button"
                 onClick={() => removeRow(i)}
-                style={{
-                  background: '#ffe2e2',
-                  border: '1px solid #ff9b9b',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                }}
+                className="bg-red-100 border border-red-300 rounded px-3"
               >
                 ✕
               </button>
@@ -278,34 +218,17 @@ export default function AdminNewProductPage() {
           <button
             type="button"
             onClick={addRow}
-            style={{
-              marginTop: 10,
-              padding: '8px 16px',
-              background: '#0ea5a4',
-              color: '#fff',
-              borderRadius: 8,
-              border: 'none',
-              cursor: 'pointer',
-            }}
+            className="mt-3 px-4 py-2 bg-teal-600 text-white rounded"
           >
             + Add UoM
           </button>
         </div>
 
-        {/* SUBMIT */}
-        <div style={{ marginTop: 30 }}>
+        <div className="mt-8">
           <button
             type="submit"
             disabled={loading}
-            style={{
-              padding: '12px 24px',
-              background: '#111827',
-              color: '#fff',
-              borderRadius: 10,
-              border: 'none',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
+            className="px-6 py-3 bg-gray-900 text-white rounded-lg"
           >
             {loading ? 'Saving…' : 'Add Product'}
           </button>

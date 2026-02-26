@@ -8,7 +8,6 @@ const router = express.Router();
 
 /* ============================
    CREATE ORDER (USER)
-   POST /orders
 ============================ */
 router.post('/', protect, async (req, res) => {
   try {
@@ -32,20 +31,18 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ message: 'No order items' });
     }
 
-    // Stock validation
+    // Deduct stock
     for (const item of items) {
-      const productId = item.productId || item._id;
-      const product = await Product.findById(productId);
-
+      const product = await Product.findById(item.productId || item._id);
       if (!product) {
         return res.status(400).json({ message: 'Product not found' });
       }
 
-      const requiredStock = item.qty * item.piecesPerUnit;
+      const requiredStock = (item.qty || 0) * (item.piecesPerUnit || 1);
 
       if (product.stock < requiredStock) {
         return res.status(400).json({
-          message: `Insufficient stock for ${product.name} (${item.unitName})`,
+          message: `Insufficient stock for ${product.name}`,
         });
       }
 
@@ -55,15 +52,7 @@ router.post('/', protect, async (req, res) => {
 
     const order = await Order.create({
       user: req.user._id,
-      items: items.map(i => ({
-        productId: i.productId || i._id,
-        name: i.name,
-        unitName: i.unitName,
-        piecesPerUnit: i.piecesPerUnit,
-        qty: i.qty,
-        unitPrice: i.unitPrice,
-        image: i.image,
-      })),
+      items,
       customerName,
       phone,
       county,
@@ -75,18 +64,13 @@ router.post('/', protect, async (req, res) => {
       status: 'pending',
     });
 
-    // 🔔 Real-time emit
     const io = req.app.get('io');
-    if (io) {
-      io.emit('newOrder', order);
-    }
+    if (io) io.emit('newOrder', order);
 
     res.status(201).json(order);
   } catch (err) {
     console.error('Create order error:', err);
-    res.status(500).json({
-      message: err.message || 'Failed to create order',
-    });
+    res.status(500).json({ message: 'Failed to create order' });
   }
 });
 
@@ -95,10 +79,11 @@ router.post('/', protect, async (req, res) => {
 ============================ */
 router.get('/my', protect, async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
-
+    const orders = await Order.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
     res.json(orders);
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: 'Failed to load orders' });
   }
 });
@@ -125,17 +110,18 @@ router.get('/', protect, adminOnly, async (req, res) => {
 router.patch('/:id/status', protect, adminOnly, async (req, res) => {
   try {
     const { status, paymentReference } = req.body;
-    const order = await Order.findById(req.params.id);
 
+    const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
     const allowedTransitions = {
-      pending: ['paid'],
+      pending: ['paid', 'cancelled'],
       paid: ['ready_for_delivery'],
       ready_for_delivery: ['delivered'],
       delivered: [],
+      cancelled: [],
     };
 
     if (!allowedTransitions[order.status]?.includes(status)) {
@@ -159,12 +145,48 @@ router.patch('/:id/status', protect, adminOnly, async (req, res) => {
 });
 
 /* ============================
+   ADMIN: CANCEL ORDER
+============================ */
+router.patch('/:id/cancel', protect, adminOnly, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({
+        message: 'Only pending orders can be cancelled',
+      });
+    }
+
+    // Restore stock
+    for (const item of order.items) {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        const restoreQty = (item.qty || 0) * (item.piecesPerUnit || 1);
+        product.stock += restoreQty;
+        await product.save();
+      }
+    }
+
+    order.status = 'cancelled';
+    await order.save();
+
+    res.json(order);
+  } catch (err) {
+    console.error('Cancel order error:', err);
+    res.status(500).json({ message: 'Failed to cancel order' });
+  }
+});
+
+/* ============================
    ADMIN: DELETE ORDER
 ============================ */
 router.delete('/:id', protect, adminOnly, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
-
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
@@ -178,8 +200,7 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 });
 
 /* ============================
-   📄 USER / ADMIN: RECEIPT PDF
-   GET /orders/:id/receipt
+   RECEIPT PDF
 ============================ */
 router.get('/:id/receipt', protect, async (req, res) => {
   try {
@@ -189,7 +210,6 @@ router.get('/:id/receipt', protect, async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Only owner or admin can access
     if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }
@@ -201,8 +221,6 @@ router.get('/:id/receipt', protect, async (req, res) => {
 
     doc.pipe(res);
 
-    // ===== RECEIPT DESIGN =====
-
     doc.fontSize(20).text('EITHERMALL RECEIPT', { align: 'center' });
     doc.moveDown();
 
@@ -212,7 +230,6 @@ router.get('/:id/receipt', protect, async (req, res) => {
     doc.text(`Customer: ${order.customerName}`);
     doc.text(`Phone: ${order.phone}`);
     doc.text(`Location: ${order.county}, ${order.subcounty}`);
-    doc.text(`Payment Method: ${order.paymentMethod.toUpperCase()}`);
     doc.text(`Status: ${order.status.toUpperCase()}`);
 
     doc.moveDown();
@@ -228,9 +245,9 @@ router.get('/:id/receipt', protect, async (req, res) => {
     });
 
     doc.moveDown();
-    doc
-      .fontSize(14)
-      .text(`Total: KSh ${order.totalAmount.toLocaleString()}`, { align: 'right' });
+    doc.fontSize(14).text(`Total: KSh ${order.totalAmount.toLocaleString()}`, {
+      align: 'right',
+    });
 
     doc.end();
   } catch (err) {
@@ -250,9 +267,10 @@ router.get('/admin/stats', protect, adminOnly, async (req, res) => {
     const pendingOrders = orders.filter(o => o.status === 'pending').length;
     const paidOrders = orders.filter(o => o.status === 'paid').length;
     const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+    const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
 
     const totalRevenue = orders
-      .filter(o => o.status !== 'pending')
+      .filter(o => o.status === 'paid' || o.status === 'delivered')
       .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
     res.json({
@@ -260,9 +278,10 @@ router.get('/admin/stats', protect, adminOnly, async (req, res) => {
       pendingOrders,
       paidOrders,
       deliveredOrders,
+      cancelledOrders,
       totalRevenue,
     });
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: 'Failed to load stats' });
   }
 });

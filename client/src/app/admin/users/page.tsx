@@ -85,7 +85,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  // 🔍 Filter
   const filtered = useMemo(() => {
     return users.filter(
       u =>
@@ -94,7 +93,6 @@ export default function AdminUsersPage() {
     );
   }, [users, search]);
 
-  // 📄 Pagination
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
 
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -105,46 +103,29 @@ export default function AdminUsersPage() {
   }
 
   if (loading) {
-    return <div style={{ padding: 40 }}>Loading users…</div>;
+    return <div className="py-10 text-center">Loading users…</div>;
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '20px auto', padding: 20 }}>
-      {/* HEADER */}
-      <div style={{ marginBottom: 20 }}>
+    <div className="max-w-6xl mx-auto px-4 md:px-6 py-6">
+      {/* ================= HEADER ================= */}
+      <div className="mb-6">
         <button
           onClick={() => router.push('/admin')}
-          style={{
-            marginBottom: 12,
-            padding: '8px 14px',
-            borderRadius: 6,
-            border: '1px solid #ccc',
-            background: '#f5f5f5',
-            cursor: 'pointer',
-          }}
+          className="mb-3 px-4 py-2 rounded border bg-gray-100 hover:bg-gray-200"
         >
           ← Back to Admin
         </button>
 
-        <h1 style={{ fontSize: 30, fontWeight: 700 }}>Users</h1>
+        <h1 className="text-3xl font-bold">Users</h1>
 
-        <span
-          style={{
-            background: '#111827',
-            color: '#fff',
-            padding: '4px 10px',
-            borderRadius: 20,
-            fontSize: 13,
-            display: 'inline-block',
-            marginTop: 5,
-          }}
-        >
+        <span className="inline-block mt-2 bg-gray-900 text-white px-3 py-1 rounded-full text-sm">
           {filtered.length} Users
         </span>
       </div>
 
-      {/* SEARCH */}
-      <div style={{ marginBottom: 20 }}>
+      {/* ================= SEARCH ================= */}
+      <div className="mb-6">
         <input
           placeholder="Search users..."
           value={search}
@@ -152,98 +133,69 @@ export default function AdminUsersPage() {
             setSearch(e.target.value);
             setPage(1);
           }}
-          style={{
-            padding: 8,
-            width: 300,
-          }}
+          className="px-3 py-2 border rounded-md w-full md:w-72"
         />
       </div>
 
-      {/* TABLE */}
-      <div style={{ overflowX: 'auto' }}>
-        <table
-          style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-          }}
-        >
+      {/* ================= TABLE ================= */}
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse min-w-[600px]">
           <thead>
-            <tr>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Actions</th>
+            <tr className="border-b bg-gray-100 text-left">
+              <th className="p-3">Email</th>
+              <th className="p-3">Role</th>
+              <th className="p-3">Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {paginated.map(u => (
-              <tr key={u._id}>
-                <td>{u.email}</td>
+              <tr key={u._id} className="border-b">
+                <td className="p-3 break-all">{u.email}</td>
 
-                <td>
+                <td className="p-3">
                   <span
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: 12,
-                      fontSize: 13,
-                      background: u.role === 'admin' ? '#22c55e' : '#e5e7eb',
-                      color: u.role === 'admin' ? '#fff' : '#111827',
-                    }}
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      u.role === 'admin'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-800'
+                    }`}
                   >
                     {u.role}
                   </span>
                 </td>
 
-                <td style={{ display: 'flex', gap: 8 }}>
-                  {u._id !== decoded?.id && (
-                    <>
-                      {u.role === 'user' && (
-                        <button
-                          onClick={() => promote(u._id)}
-                          style={{
-                            background: '#0ea5a4',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '6px 10px',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Make Admin
-                        </button>
-                      )}
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {u._id !== decoded?.id && (
+                      <>
+                        {u.role === 'user' && (
+                          <button
+                            onClick={() => promote(u._id)}
+                            className="px-3 py-1 bg-teal-600 text-white rounded hover:bg-teal-700"
+                          >
+                            Make Admin
+                          </button>
+                        )}
 
-                      {u.role === 'admin' && (
-                        <button
-                          onClick={() => demote(u._id)}
-                          style={{
-                            background: '#f59e0b',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '6px 10px',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Remove Admin
-                        </button>
-                      )}
+                        {u.role === 'admin' && (
+                          <button
+                            onClick={() => demote(u._id)}
+                            className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                          >
+                            Remove Admin
+                          </button>
+                        )}
 
-                      <button
-                        onClick={() => remove(u._id)}
-                        style={{
-                          background: '#ffdddd',
-                          border: '1px solid #d88',
-                          color: '#d00',
-                          cursor: 'pointer',
-                          padding: '6px 10px',
-                          borderRadius: 6,
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
+                        <button
+                          onClick={() => remove(u._id)}
+                          className="px-3 py-1 bg-red-100 border border-red-300 text-red-700 rounded hover:bg-red-200"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -251,17 +203,14 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      {/* PAGINATION */}
+      {/* ================= PAGINATION ================= */}
       {totalPages > 1 && (
-        <div
-          style={{
-            marginTop: 25,
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 8,
-          }}
-        >
-          <button onClick={() => changePage(page - 1)} disabled={page === 1}>
+        <div className="mt-8 flex justify-center gap-2 flex-wrap">
+          <button
+            onClick={() => changePage(page - 1)}
+            disabled={page === 1}
+            className="px-3 py-1 border rounded disabled:opacity-40"
+          >
             Prev
           </button>
 
@@ -269,15 +218,19 @@ export default function AdminUsersPage() {
             <button
               key={i}
               onClick={() => changePage(i + 1)}
-              style={{
-                fontWeight: page === i + 1 ? 'bold' : 'normal',
-              }}
+              className={`px-3 py-1 border rounded ${
+                page === i + 1 ? 'bg-gray-900 text-white' : ''
+              }`}
             >
               {i + 1}
             </button>
           ))}
 
-          <button onClick={() => changePage(page + 1)} disabled={page === totalPages}>
+          <button
+            onClick={() => changePage(page + 1)}
+            disabled={page === totalPages}
+            className="px-3 py-1 border rounded disabled:opacity-40"
+          >
             Next
           </button>
         </div>
