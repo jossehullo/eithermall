@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react'; // ✅ ADDED
-import { io, Socket } from 'socket.io-client'; // ✅ ADDED
-import { API_BASE_URL } from '@/lib/api'; // ✅ ADDED
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { API_BASE_URL } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 
@@ -21,39 +21,27 @@ export default function RightNavbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { cartItems } = useCart();
-
-  const [newOrdersCount, setNewOrdersCount] = useState(0); // ✅ ADDED
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
   const linkStyle = (path: string) =>
-    `
-    flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200
-    ${
-      isActive(path) ? 'bg-black text-white shadow-md' : 'text-gray-700 hover:bg-gray-100'
-    }
-  `;
+    `flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm transition whitespace-nowrap
+     ${isActive(path) ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-100'}`;
 
   /* ================= SOCKET FOR ADMIN ================= */
   useEffect(() => {
-    if (user?.role !== 'admin') return; // 👑 Only admins
+    if (user?.role !== 'admin') return;
 
     const socket: Socket = io(API_BASE_URL.replace('/api', ''));
 
     socket.on('newOrder', () => {
       setNewOrdersCount(prev => prev + 1);
-
-      // 🔊 Play sound
-      const audio = new Audio('/notification.mp3');
-      audio.play().catch(() => {});
     });
 
-    return () => {
-      socket.disconnect();
-    };
+    return () => socket.disconnect();
   }, [user]);
 
-  /* ================= RESET BADGE WHEN VISITING ADMIN ================= */
   useEffect(() => {
     if (pathname.startsWith('/admin')) {
       setNewOrdersCount(0);
@@ -62,88 +50,92 @@ export default function RightNavbar() {
 
   return (
     <nav
-      className="hidden md:flex fixed top-4 right-6 z-50 
-                    bg-white/80 backdrop-blur-lg shadow-lg 
-                    px-8 py-3 rounded-full"
+      className="
+        fixed top-0 left-0 right-0
+        z-50
+        bg-white/95 backdrop-blur-md
+        shadow-sm
+        px-3 md:px-6
+        py-2
+      "
     >
-      <div className="flex items-center gap-6">
-        <Link href="/" className={linkStyle('/')}>
-          <HomeIcon />
-          <span>Home</span>
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        {/* LOGO */}
+        <Link href="/" className="font-bold text-lg whitespace-nowrap">
+          Eithermall
         </Link>
 
-        <Link href="/products" className={linkStyle('/products')}>
-          <ProductsIcon />
-          <span>Products</span>
-        </Link>
-
-        <Link href="/wishlist" className={linkStyle('/wishlist')}>
-          <WishlistIcon />
-          <span>Wishlist</span>
-        </Link>
-
-        <Link href="/cart" className={`relative ${linkStyle('/cart')}`}>
-          <CartIcon />
-          <span>Cart</span>
-
-          {cartItems.length > 0 && (
-            <span
-              className="absolute -top-2 -right-3 
-                             bg-red-500 text-white text-xs 
-                             px-2 py-[2px] rounded-full"
-            >
-              {cartItems.length}
-            </span>
-          )}
-        </Link>
-
-        {user && (
-          <Link href="/profile" className={linkStyle('/profile')}>
-            <ProfileIcon />
-            <span>Profile</span>
+        {/* NAV LINKS (Scrollable on small screens) */}
+        <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar">
+          <Link href="/" className={linkStyle('/')}>
+            <HomeIcon />
+            <span className="hidden sm:inline">Home</span>
           </Link>
-        )}
 
-        {user?.role === 'admin' && (
-          <Link href="/admin" className={`relative ${linkStyle('/admin')}`}>
-            <AdminIcon />
-            <span>Admin</span>
+          <Link href="/products" className={linkStyle('/products')}>
+            <ProductsIcon />
+            <span className="hidden sm:inline">Products</span>
+          </Link>
 
-            {/* 🔴 NEW ORDER BADGE */}
-            {newOrdersCount > 0 && (
-              <span
-                className="absolute -top-2 -right-3 
-                           bg-red-500 text-white text-xs 
-                           px-2 py-[2px] rounded-full
-                           animate-pulse"
-              >
-                {newOrdersCount}
+          <Link href="/wishlist" className={linkStyle('/wishlist')}>
+            <WishlistIcon />
+            <span className="hidden sm:inline">Wishlist</span>
+          </Link>
+
+          <Link href="/cart" className={`relative ${linkStyle('/cart')}`}>
+            <CartIcon />
+            <span className="hidden sm:inline">Cart</span>
+
+            {cartItems.length > 0 && (
+              <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] px-1.5 py-[2px] rounded-full">
+                {cartItems.length}
               </span>
             )}
           </Link>
-        )}
 
-        {user ? (
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 px-4 py-2 rounded-full
-                       bg-red-500 text-white hover:bg-red-600
-                       transition-all duration-200"
-          >
-            <LogoutIcon />
-            Logout
-          </button>
-        ) : (
-          <Link
-            href="/login"
-            className="flex items-center gap-2 px-4 py-2 rounded-full
-                       bg-black text-white hover:opacity-90
-                       transition-all duration-200"
-          >
-            <LoginIcon />
-            Login
-          </Link>
-        )}
+          {user?.role === 'admin' && (
+            <Link href="/admin" className={`relative ${linkStyle('/admin')}`}>
+              <AdminIcon />
+              <span className="hidden sm:inline">Admin</span>
+
+              {newOrdersCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] px-1.5 py-[2px] rounded-full animate-pulse">
+                  {newOrdersCount}
+                </span>
+              )}
+            </Link>
+          )}
+
+          {user ? (
+            <>
+              <Link href="/profile" className={linkStyle('/profile')}>
+                <ProfileIcon />
+                <span className="hidden sm:inline">Profile</span>
+              </Link>
+
+              {/* ✅ Logout always visible */}
+              <button
+                onClick={logout}
+                className="flex items-center gap-1 px-3 py-2 rounded-full
+                           bg-red-500 text-white hover:bg-red-600
+                           text-xs md:text-sm transition whitespace-nowrap"
+              >
+                <LogoutIcon />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center gap-1 px-3 py-2 rounded-full
+                         bg-black text-white hover:opacity-90
+                         text-xs md:text-sm transition whitespace-nowrap"
+            >
+              <LoginIcon />
+              <span className="hidden sm:inline">Login</span>
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );

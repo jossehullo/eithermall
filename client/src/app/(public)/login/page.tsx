@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,6 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/products');
     } catch (err: any) {
-      // Catch error and show readable message
       setError(err?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
@@ -30,9 +30,10 @@ export default function LoginPage() {
 
   return (
     <div className="page-bg flex items-center justify-center min-h-screen p-6">
-      <div className="hero-card-glow max-w-md w-full p-8 rounded-2xl text-center shadow-2xl animate-slideIn">
-        <h1 className="text-3xl font-bold gold-accent mb-6">Welcome Back</h1>
-        <p className="text-white/80 mb-8">Sign in to continue shopping</p>
+      <div className="max-w-md w-full p-8 rounded-2xl shadow-2xl bg-white text-gray-900">
+        <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
+
+        <p className="text-gray-600 mb-8">Sign in to continue shopping</p>
 
         <form onSubmit={handleLogin} className="space-y-5">
           <input
@@ -40,7 +41,7 @@ export default function LoginPage() {
             placeholder="Email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             required
           />
 
@@ -49,7 +50,7 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             required
           />
 
@@ -60,17 +61,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="gold-btn w-full py-3 font-semibold text-lg"
+            className="w-full py-3 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-semibold transition-all duration-300"
           >
             {loading ? 'Signing in…' : 'Login'}
           </button>
         </form>
 
-        <p className="mt-6 text-sm text-white/70">
+        <p className="mt-6 text-sm text-gray-600 text-center">
           Don’t have an account?{' '}
           <button
             onClick={() => router.push('/register')}
-            className="text-yellow-400 hover:text-yellow-300 cursor-pointer font-semibold"
+            className="text-yellow-600 hover:text-yellow-500 font-semibold"
           >
             Register
           </button>

@@ -9,9 +9,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
 
-  /* =============================
-     AUTH & ROLE GUARD
-     ============================= */
   useEffect(() => {
     if (loading) return;
 
@@ -42,13 +39,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Users', href: '/admin/users' },
   ];
 
-  /* =============================
-     LAYOUT
-     ============================= */
   return (
-    <div className="flex min-h-screen bg-[var(--background)] text-white">
-      {/* ================= SIDEBAR ================= */}
-      <aside className="w-64 bg-black/30 backdrop-blur-lg border-r border-yellow-400/20 p-6 flex flex-col">
+    <div className="flex min-h-screen bg-[var(--background)] text-gray-900">
+      {/* SIDEBAR */}
+      <aside className="w-64 bg-black/30 backdrop-blur-lg border-r border-yellow-400/20 p-6 flex flex-col text-white">
         <h2 className="text-3xl font-extrabold mb-8 gold-accent">Admin Zone</h2>
 
         <nav className="flex flex-col gap-2">
@@ -73,7 +67,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* =============== FOOTER =============== */}
         <div className="mt-auto pt-6 border-t border-yellow-500/20">
           <p className="text-sm opacity-60 mb-1">Logged in as</p>
           <p className="font-semibold gold-accent truncate">{user.email}</p>
@@ -87,7 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* ================= MAIN CONTENT ================= */}
+      {/* MAIN CONTENT */}
       <main className="flex-1 p-8 overflow-y-auto">{children}</main>
     </div>
   );

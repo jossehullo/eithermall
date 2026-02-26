@@ -7,9 +7,8 @@ import { useRouter } from 'next/navigation';
 import { resolveImageUrl } from '@/lib/image';
 import { API_BASE_URL } from '@/lib/api';
 
-/* =======================
-   TYPES
-======================= */
+/* ======================= TYPES ======================= */
+
 type PackagingOption = {
   name: string;
   piecesPerUnit: number;
@@ -47,29 +46,25 @@ export default function ProductsPage() {
   const [selectedUom, setSelectedUom] = useState<PackagingOption | null>(null);
   const [qty, setQty] = useState(1);
 
-  /* =======================
-     FETCH PRODUCTS
-  ======================= */
+  /* ======================= FETCH ======================= */
+
   useEffect(() => {
     axios
       .get(`${API_BASE_URL}/products`)
-
       .then(res => setProducts(Array.isArray(res.data) ? res.data : []))
       .catch(() => setProducts([]));
   }, []);
 
-  /* =======================
-     CATEGORIES
-  ======================= */
+  /* ======================= CATEGORIES ======================= */
+
   const categories = useMemo(() => {
     const set = new Set<string>(['All']);
     products.forEach(p => p.category && set.add(p.category));
     return Array.from(set);
   }, [products]);
 
-  /* =======================
-     FILTER
-  ======================= */
+  /* ======================= FILTER ======================= */
+
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const matchCategory = activeCategory === 'All' || p.category === activeCategory;
@@ -78,38 +73,32 @@ export default function ProductsPage() {
     });
   }, [products, activeCategory, search]);
 
-  /* =======================
-     SORT
-  ======================= */
+  /* ======================= SORT ======================= */
+
   const sortedProducts = useMemo(() => {
     const list = [...filteredProducts];
 
-    if (sortBy === 'name-asc') {
-      return list.sort((a, b) => a.name.localeCompare(b.name));
-    }
+    if (sortBy === 'name-asc') return list.sort((a, b) => a.name.localeCompare(b.name));
 
-    if (sortBy === 'price-asc') {
+    if (sortBy === 'price-asc')
       return list.sort(
         (a, b) =>
           (a.packagingOptions?.[0]?.price ?? a.price) -
           (b.packagingOptions?.[0]?.price ?? b.price)
       );
-    }
 
-    if (sortBy === 'price-desc') {
+    if (sortBy === 'price-desc')
       return list.sort(
         (a, b) =>
           (b.packagingOptions?.[0]?.price ?? b.price) -
           (a.packagingOptions?.[0]?.price ?? a.price)
       );
-    }
 
     return list;
   }, [filteredProducts, sortBy]);
 
-  /* =======================
-     PAGINATION
-  ======================= */
+  /* ======================= PAGINATION ======================= */
+
   const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
 
   const paginatedProducts = useMemo(() => {
@@ -117,11 +106,11 @@ export default function ProductsPage() {
     return sortedProducts.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedProducts, page]);
 
-  /* =======================
-     MODAL
-  ======================= */
+  /* ======================= MODAL ======================= */
+
   function openUomModal(product: Product) {
     if (!product.stock || product.stock <= 0) return;
+
     setSelectedProduct(product);
     setSelectedUom(product.packagingOptions?.[0] ?? null);
     setQty(1);
@@ -150,9 +139,8 @@ export default function ProductsPage() {
     setModalVisible(false);
   }
 
-  /* =======================
-     UI
-  ======================= */
+  /* ======================= UI ======================= */
+
   return (
     <div style={{ padding: 32 }}>
       <h1 style={{ fontSize: 36, fontWeight: 800 }}>Explore Our Collection</h1>
@@ -202,62 +190,36 @@ export default function ProductsPage() {
         </select>
       </div>
 
-      {/* CATEGORIES */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 10,
-          marginBottom: 25,
-          flexWrap: 'wrap',
-        }}
-      >
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => {
-              setActiveCategory(cat);
-              setPage(1);
-            }}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 30,
-              background: activeCategory === cat ? '#f6c23e' : '#fff',
-              border: '1px solid #ddd',
-            }}
-          >
-            {cat}
-          </button>
-        ))}
+      {/* ✅ UPDATED CATEGORIES ONLY */}
+      <div className="overflow-x-auto mb-6">
+        <div className="flex gap-3 min-w-max pb-2">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => {
+                setActiveCategory(cat);
+                setPage(1);
+              }}
+              className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition ${
+                activeCategory === cat
+                  ? 'bg-yellow-400 text-black'
+                  : 'bg-white border hover:bg-gray-100'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* GRID */}
-      <div className="products-grid">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {paginatedProducts.map(product => (
           <div
             key={product._id}
-            style={{
-              background: '#fff',
-              borderRadius: 14,
-              padding: 14,
-              boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s ease',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+            className="bg-white rounded-2xl p-4 shadow-md hover:shadow-xl transition transform hover:-translate-y-1"
           >
-            {/* IMAGE CONTAINER */}
-            <div
-              style={{
-                width: '100%',
-                height: 200,
-                background: '#f8f8f8',
-                borderRadius: 10,
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <div className="w-full h-44 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
               <img
                 src={
                   product.image?.startsWith('http')
@@ -267,50 +229,33 @@ export default function ProductsPage() {
                       : resolveImageUrl(product.image) || '/placeholder.png'
                 }
                 alt={product.name}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  objectFit: 'contain',
-                  transition: 'transform 0.3s ease',
-                }}
-                onMouseOver={e => (e.currentTarget.style.transform = 'scale(1.08)')}
-                onMouseOut={e => (e.currentTarget.style.transform = 'scale(1)')}
-                onError={e => {
-                  e.currentTarget.src = '/placeholder.png';
-                }}
+                className="max-w-full max-h-full object-contain"
               />
             </div>
 
-            <h3 style={{ marginTop: 10, fontWeight: 700 }}>{product.name}</h3>
+            <h3 className="mt-3 font-semibold text-sm md:text-base">{product.name}</h3>
 
-            <p style={{ color: '#c92a2a', fontWeight: 700 }}>
+            <p className="text-red-600 font-bold mt-1">
               From KSh{' '}
               {(product.packagingOptions?.[0]?.price || product.price).toLocaleString()}
             </p>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            <div className="flex gap-2 mt-3">
               <button
                 disabled={!product.stock || product.stock <= 0}
                 onClick={() => openUomModal(product)}
-                style={{
-                  flex: 1,
-                  padding: 10,
-                  background: product.stock ? '#000' : '#aaa',
-                  color: '#fff',
-                  borderRadius: 8,
-                }}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+                  product.stock
+                    ? 'bg-black text-white hover:bg-gray-800'
+                    : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                }`}
               >
                 {product.stock ? 'Choose Unit' : 'Out of Stock'}
               </button>
 
               <button
                 onClick={() => router.push(`/products/${product._id}`)}
-                style={{
-                  flex: 1,
-                  padding: 10,
-                  borderRadius: 8,
-                  border: '1px solid #ccc',
-                }}
+                className="flex-1 py-2 rounded-lg border text-sm hover:bg-gray-100"
               >
                 Details
               </button>
@@ -406,7 +351,9 @@ export default function ProductsPage() {
               }}
             >
               <button onClick={() => qty > 1 && setQty(qty - 1)}>−</button>
+
               <strong>{qty}</strong>
+
               <button disabled={qty >= maxQty} onClick={() => setQty(q => q + 1)}>
                 +
               </button>

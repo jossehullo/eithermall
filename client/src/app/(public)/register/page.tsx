@@ -16,14 +16,12 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Remove spaces before submitting
     const cleanPhone = phone.replace(/\s+/g, '');
-
     await register(username, email, password, cleanPhone);
+
     router.push('/login');
   };
 
-  // Phone number formatter for Kenya (+254 7xx xxx xxx)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let input = e.target.value.replace(/\D/g, '');
 
@@ -40,7 +38,6 @@ export default function RegisterPage() {
     setPhone(formatted);
   };
 
-  // ✅ Correct handler for paste events
   const handlePhonePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
 
@@ -62,9 +59,10 @@ export default function RegisterPage() {
 
   return (
     <div className="page-bg flex items-center justify-center min-h-screen p-6">
-      <div className="hero-card-glow max-w-md w-full p-8 rounded-2xl text-center shadow-2xl animate-slideIn">
-        <h1 className="text-3xl font-bold gold-accent mb-6">Create an Account</h1>
-        <p className="text-white/80 mb-8">Join the Eithermall experience today</p>
+      <div className="max-w-md w-full p-8 rounded-2xl shadow-2xl bg-white text-gray-900">
+        <h1 className="text-3xl font-bold mb-2">Create an Account</h1>
+
+        <p className="text-gray-600 mb-8">Join the Eithermall experience today</p>
 
         <form onSubmit={handleRegister} className="space-y-5">
           <input
@@ -72,7 +70,7 @@ export default function RegisterPage() {
             placeholder="Username"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-yellow-400 outline-none"
             required
           />
 
@@ -82,7 +80,7 @@ export default function RegisterPage() {
             value={phone}
             onChange={handlePhoneChange}
             onPaste={handlePhonePaste}
-            className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-yellow-400 outline-none"
             required
           />
 
@@ -91,7 +89,7 @@ export default function RegisterPage() {
             placeholder="Email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-yellow-400 outline-none"
             required
           />
 
@@ -100,16 +98,19 @@ export default function RegisterPage() {
             placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-[rgba(255,255,255,0.05)] text-white placeholder-white/50 outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-yellow-400 outline-none"
             required
           />
 
-          <button type="submit" className="gold-btn w-full py-3 font-semibold text-lg">
+          <button
+            type="submit"
+            className="w-full py-3 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-semibold transition-all duration-300"
+          >
             Register
           </button>
         </form>
 
-        <div className="mt-6 text-sm text-white/70 flex flex-col items-center">
+        <div className="mt-6 text-sm text-gray-600 text-center">
           <p>Already have an account?</p>
           <button
             onClick={() => router.push('/login')}
