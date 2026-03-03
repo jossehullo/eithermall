@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { API_BASE_URL } from '@/lib/api';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
 type OrderItem = {
   productId?: string;
@@ -15,13 +15,15 @@ type OrderItem = {
   unitPrice: number;
 };
 
+type OrderStatus = 'pending' | 'paid' | 'ready_for_delivery' | 'delivered' | 'cancelled';
+
 type Order = {
   _id: string;
   items: OrderItem[];
   totalAmount: number;
   paymentMethod: 'equity' | 'kcb';
   paymentReference?: string;
-  status: 'pending' | 'paid' | 'ready_for_delivery' | 'delivered' | 'cancelled';
+  status: OrderStatus;
   createdAt: string;
   customerName?: string;
   phone?: string;
@@ -38,8 +40,6 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [paymentRefs, setPaymentRefs] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
   const [page, setPage] = useState(1);
 
   /* ================= FETCH ================= */
@@ -51,8 +51,8 @@ export default function AdminOrdersPage() {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!res.ok) throw new Error();
-    const data = await res.json();
+    if (!res.ok) throw new Error('Failed to fetch orders');
+    const data: Order[] = await res.json();
     setOrders(data);
   };
 
@@ -70,7 +70,7 @@ export default function AdminOrdersPage() {
 
   /* ================= SOCKET ================= */
   useEffect(() => {
-    const socket = io(API_BASE_URL.replace('/api', ''));
+    const socket: Socket = io(API_BASE_URL.replace('/api', ''));
 
     socket.on('newOrder', (newOrder: Order) => {
       setOrders(prev => [newOrder, ...prev]);
@@ -84,33 +84,21 @@ export default function AdminOrdersPage() {
 
   /* ================= FILTER ================= */
   const processed = useMemo(() => {
-    let filtered = orders.filter(order => {
-      // ❌ Hide cancelled orders completely
-      if (order.status === 'cancelled') return false;
-
-      const matchesSearch =
-        order.customerName?.toLowerCase().includes(search.toLowerCase()) ||
-        order.phone?.includes(search);
-
-      const matchesStatus = statusFilter ? order.status === statusFilter : true;
-
-      return matchesSearch && matchesStatus;
-    });
-
-    filtered.sort((a, b) =>
-      sort === 'newest'
-        ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-
-    return filtered;
-  }, [orders, search, statusFilter, sort]);
+    return orders
+      .filter(order => order.status !== 'cancelled')
+      .filter(order => {
+        return (
+          order.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+          order.phone?.includes(search)
+        );
+      });
+  }, [orders, search]);
 
   const totalPages = Math.ceil(processed.length / ITEMS_PER_PAGE);
   const paginated = processed.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   /* ================= UPDATE STATUS ================= */
-  async function updateStatus(orderId: string, newStatus: Order['status']) {
+  async function updateStatus(orderId: string, newStatus: OrderStatus) {
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -132,7 +120,8 @@ export default function AdminOrdersPage() {
         throw new Error(err.message);
       }
 
-      const updated = await res.json();
+      const updated: Order = await res.json();
+
       setOrders(prev => prev.map(o => (o._id === updated._id ? updated : o)));
 
       toast.success('Order status updated');
@@ -141,7 +130,7 @@ export default function AdminOrdersPage() {
     }
   }
 
-  /* ================= CANCEL ORDER ================= */
+  /* ================= CANCEL ================= */
   async function cancelOrder(orderId: string) {
     if (!confirm('Cancel this order and restore stock?')) return;
 
@@ -159,12 +148,35 @@ export default function AdminOrdersPage() {
         throw new Error(err.message);
       }
 
-      const updated = await res.json();
-      setOrders(prev => prev.map(o => (o._id === updated._id ? updated : o)));
+      // remove from UI immediately
+      setOrders(prev => prev.filter(o => o._id !== orderId));
 
       toast.success('Order cancelled & stock restored');
     } catch (err: any) {
       toast.error(err.message || 'Failed to cancel order');
+    }
+  }
+
+  /* ================= DELETE ================= */
+  async function deleteOrder(orderId: string) {
+    if (!confirm('Delete this order permanently?')) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error();
+
+      setOrders(prev => prev.filter(o => o._id !== orderId));
+
+      toast.success('Order deleted permanently');
+    } catch {
+      toast.error('Failed to delete order');
     }
   }
 
@@ -203,11 +215,11 @@ export default function AdminOrdersPage() {
         >
           <div style={{ marginBottom: 8 }}>
             <strong>{order.customerName}</strong>
-            <div style={{ fontSize: 13, color: '#555' }}>{order.phone}</div>
+            <div style={{ fontSize: 13 }}>{order.phone}</div>
             <div style={{ fontSize: 13 }}>
               {order.county}, {order.subcounty}
             </div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+            <div style={{ fontSize: 12, marginTop: 4 }}>
               🕒 {new Date(order.createdAt).toLocaleString()}
             </div>
           </div>
@@ -238,29 +250,29 @@ export default function AdminOrdersPage() {
             Total: KSh {order.totalAmount.toLocaleString()}
           </div>
 
-          {order.status === 'pending' && (
-            <>
-              <input
-                type="text"
-                placeholder="Payment reference"
-                value={paymentRefs[order._id] || ''}
-                onChange={e =>
-                  setPaymentRefs(prev => ({
-                    ...prev,
-                    [order._id]: e.target.value,
-                  }))
-                }
-                style={{
-                  width: '100%',
-                  padding: 8,
-                  marginTop: 10,
-                }}
-              />
+          <div
+            style={{
+              display: 'flex',
+              gap: 10,
+              marginTop: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <select
+              value={order.status}
+              onChange={e => updateStatus(order._id, e.target.value as OrderStatus)}
+              style={{ padding: 8 }}
+            >
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="ready_for_delivery">Ready for delivery</option>
+              <option value="delivered">Delivered</option>
+            </select>
 
+            {order.status === 'pending' && (
               <button
                 onClick={() => cancelOrder(order._id)}
                 style={{
-                  marginTop: 10,
                   background: '#f59e0b',
                   color: '#fff',
                   border: 'none',
@@ -271,26 +283,21 @@ export default function AdminOrdersPage() {
               >
                 Cancel Order
               </button>
-            </>
-          )}
+            )}
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginTop: 10,
-            }}
-          >
-            <select
-              value={order.status}
-              onChange={e => updateStatus(order._id, e.target.value as Order['status'])}
-              style={{ padding: 8, width: 220 }}
+            <button
+              onClick={() => deleteOrder(order._id)}
+              style={{
+                background: '#ffdddd',
+                border: '1px solid #d88',
+                color: '#d00',
+                padding: '8px 12px',
+                borderRadius: 6,
+                cursor: 'pointer',
+              }}
             >
-              <option value="pending">Pending</option>
-              <option value="paid">Paid</option>
-              <option value="ready_for_delivery">Ready for delivery</option>
-              <option value="delivered">Delivered</option>
-            </select>
+              Delete Order
+            </button>
           </div>
         </div>
       ))}

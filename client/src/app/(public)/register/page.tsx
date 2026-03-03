@@ -12,14 +12,33 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const passwordsMatch = password === confirmPassword;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!passwordsMatch) {
+      setError('Passwords do not match');
+      return;
+    }
 
     const cleanPhone = phone.replace(/\s+/g, '');
-    await register(username, email, password, cleanPhone);
 
-    router.push('/login');
+    const result = await register(username, email, password, cleanPhone);
+
+    if (!result.success) {
+      setError(result.message);
+      return; // 🚨 Stop here if registration failed
+    }
+
+    alert('Registration successful!');
+    router.push('/login'); // ✅ Only redirect if success
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,7 +80,6 @@ export default function RegisterPage() {
     <div className="page-bg flex items-center justify-center min-h-screen p-6">
       <div className="max-w-md w-full p-8 rounded-2xl shadow-2xl bg-white text-gray-900">
         <h1 className="text-3xl font-bold mb-2">Create an Account</h1>
-
         <p className="text-gray-600 mb-8">Join the Eithermall experience today</p>
 
         <form onSubmit={handleRegister} className="space-y-5">
@@ -93,14 +111,53 @@ export default function RegisterPage() {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-yellow-400 outline-none"
-            required
-          />
+          {/* PASSWORD */}
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-yellow-400 outline-none"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(prev => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+            >
+              {showPassword ? '🙈' : '👁'}
+            </button>
+          </div>
+
+          {/* CONFIRM PASSWORD */}
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              className={`w-full px-4 py-3 pr-12 rounded-lg border ${
+                confirmPassword && !passwordsMatch ? 'border-red-400' : 'border-gray-300'
+              } text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-yellow-400 outline-none`}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(prev => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+            >
+              {showConfirmPassword ? '🙈' : '👁'}
+            </button>
+          </div>
+
+          {confirmPassword && !passwordsMatch && (
+            <p className="text-red-500 text-sm">Passwords do not match</p>
+          )}
+
+          {error && (
+            <p className="text-red-500 text-sm text-center font-medium">{error}</p>
+          )}
 
           <button
             type="submit"

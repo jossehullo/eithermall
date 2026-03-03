@@ -13,16 +13,21 @@ interface User {
   avatar?: string;
 }
 
+interface AuthResponse {
+  success: boolean;
+  message: string;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
   register: (
     username: string,
     email: string,
     password: string,
     phone?: string
-  ) => Promise<void>;
+  ) => Promise<AuthResponse>;
   logout: () => void;
 }
 
@@ -40,24 +45,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   /* ===================== LOGIN ===================== */
-  const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || 'Login failed');
+  const login = async (email: string, password: string): Promise<AuthResponse> => {
+    if (!email || !password) {
+      return { success: false, message: 'Email and password are required' };
     }
 
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setUser(data.user);
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { success: false, message: data.message || 'Invalid credentials' };
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+
+      return { success: true, message: 'Login successful' };
+    } catch (err) {
+      console.error('Login network error:', err);
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
   };
 
   /* ===================== REGISTER ===================== */
@@ -66,20 +83,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     phone?: string
-  ) => {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password, phone }),
-    });
+  ): Promise<AuthResponse> => {
+    /* ===== FRONTEND VALIDATION ===== */
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || 'Registration failed');
+    if (!username || !email || !password || !phone) {
+      return { success: false, message: 'All fields are required' };
     }
 
-    router.push('/login');
+    if (password.length < 6) {
+      return {
+        success: false,
+        message: 'Password must be at least 6 characters',
+      };
+    }
+
+    // Clean phone
+    let cleanPhone = phone.replace(/[^0-9+]/g, '');
+
+    if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.slice(1);
+    if (cleanPhone.startsWith('254')) cleanPhone = '+' + cleanPhone;
+    if (!cleanPhone.startsWith('+254'))
+      cleanPhone = '+254' + cleanPhone.replace(/^\+?0?/, '');
+
+    if (!/^\+254\d{9}$/.test(cleanPhone)) {
+      return {
+        success: false,
+        message: 'Phone must be in format +254XXXXXXXXX',
+      };
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          phone: cleanPhone,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return {
+          success: false,
+          message: data.message || 'Registration failed',
+        };
+      }
+
+      return { success: true, message: 'Registration successful' };
+    } catch (err) {
+      console.error('Register network error:', err);
+      return {
+        success: false,
+        message: 'Network error. Please try again.',
+      };
+    }
   };
 
   const logout = () => {

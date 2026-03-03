@@ -12,7 +12,11 @@ const userSchema = new mongoose.Schema(
       match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
 
-    password: { type: String, required: true, minlength: 6 },
+    password: {
+      type: String,
+      required: true,
+      minlength: [6, 'Password must be at least 6 characters'],
+    },
 
     phone: {
       type: String,

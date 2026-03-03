@@ -19,6 +19,14 @@ export default function HomePage() {
           — or jump straight in and start shopping now.
         </p>
 
+        {/* 📞 Call Section Added Here */}
+        <div className="mt-8 flex items-center justify-center gap-2 text-lg font-semibold text-gray-700">
+          <span className="text-xl">📞</span>
+          <a href="tel:0768903777" className="text-blue-600 hover:underline">
+            0768903777
+          </a>
+        </div>
+
         <div className="mt-12 flex flex-wrap justify-center gap-8">
           <button
             onClick={() => router.push('/login')}
