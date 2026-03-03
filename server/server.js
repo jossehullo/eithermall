@@ -65,6 +65,14 @@ app.get('/', (_, res) => {
   res.send('Eithermall API is running...');
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+  });
+});
+
 /* =========================
    404 HANDLER
 ========================= */
