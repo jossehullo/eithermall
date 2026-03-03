@@ -21,7 +21,7 @@ interface AuthResponse {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<AuthResponse>;
+  login: (email: string, password: string) => Promise<void>; // ✅ changed
   register: (
     username: string,
     email: string,
@@ -45,9 +45,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   /* ===================== LOGIN ===================== */
-  const login = async (email: string, password: string): Promise<AuthResponse> => {
+  const login = async (email: string, password: string): Promise<void> => {
     if (!email || !password) {
-      return { success: false, message: 'Email and password are required' };
+      throw new Error('Email and password are required');
     }
 
     try {
@@ -60,20 +60,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await res.json();
 
       if (!res.ok) {
-        return { success: false, message: data.message || 'Invalid credentials' };
+        throw new Error(data.message || 'Invalid credentials');
+      }
+
+      if (!data.token || !data.user) {
+        throw new Error('Invalid server response');
       }
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
-
-      return { success: true, message: 'Login successful' };
-    } catch (err) {
-      console.error('Login network error:', err);
-      return {
-        success: false,
-        message: 'Network error. Please try again.',
-      };
+    } catch (err: any) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      throw new Error(err.message || 'Network error. Please try again.');
     }
   };
 
@@ -84,8 +85,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string,
     phone?: string
   ): Promise<AuthResponse> => {
-    /* ===== FRONTEND VALIDATION ===== */
-
     if (!username || !email || !password || !phone) {
       return { success: false, message: 'All fields are required' };
     }
@@ -97,7 +96,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
     }
 
-    // Clean phone
     let cleanPhone = phone.replace(/[^0-9+]/g, '');
 
     if (cleanPhone.startsWith('0')) cleanPhone = '254' + cleanPhone.slice(1);
