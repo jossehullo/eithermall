@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useCart } from '@/context/CartContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { resolveImageUrl } from '@/lib/image';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -39,7 +39,10 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState<
     'default' | 'name-asc' | 'price-asc' | 'price-desc'
   >('default');
-  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const initialPage = Number(searchParams.get('page')) || 1;
+
+  const [page, setPage] = useState(initialPage);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -105,6 +108,31 @@ export default function ProductsPage() {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return sortedProducts.slice(start, start + ITEMS_PER_PAGE);
   }, [sortedProducts, page]);
+
+  /* ===== HELPER FOR MINIMAL PAGINATION ===== */
+
+  const getVisiblePages = () => {
+    const pages: number[] = [];
+
+    let start = Math.max(1, page - 1);
+    let end = Math.min(totalPages, page + 1);
+
+    if (page <= 2) {
+      start = 1;
+      end = Math.min(3, totalPages);
+    }
+
+    if (page >= totalPages - 1) {
+      start = Math.max(1, totalPages - 2);
+      end = totalPages;
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
 
   /* ======================= MODAL ======================= */
 
@@ -254,7 +282,7 @@ export default function ProductsPage() {
               </button>
 
               <button
-                onClick={() => router.push(`/products/${product._id}`)}
+                onClick={() => router.push(`/products/${product._id}?page=${page}`)}
                 className="flex-1 py-2 rounded-lg border text-sm hover:bg-gray-100"
               >
                 Details
@@ -266,32 +294,36 @@ export default function ProductsPage() {
 
       {/* PAGINATION */}
       {totalPages > 1 && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 10,
-            marginTop: 30,
-            flexWrap: 'wrap',
-          }}
-        >
-          <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+        <div className="flex justify-center items-center gap-3 mt-10 flex-wrap">
+          {/* PREV */}
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+            className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 disabled:opacity-40"
+          >
             ← Prev
           </button>
 
-          {Array.from({ length: totalPages }).map((_, i) => (
+          {/* PAGE NUMBERS */}
+          {getVisiblePages().map(p => (
             <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              style={{
-                fontWeight: page === i + 1 ? 700 : 400,
-              }}
+              key={p}
+              onClick={() => setPage(p)}
+              className={`px-4 py-2 rounded-lg border font-semibold transition
+        ${
+          p === page ? 'bg-black text-white border-black' : 'bg-white hover:bg-gray-100'
+        }`}
             >
-              {i + 1}
+              {p}
             </button>
           ))}
 
-          <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+          {/* NEXT */}
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(p => p + 1)}
+            className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 disabled:opacity-40"
+          >
             Next →
           </button>
         </div>

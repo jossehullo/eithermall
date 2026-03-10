@@ -190,7 +190,7 @@ export default function ProductDetailsPage() {
             </button>
 
             <button
-              onClick={() => router.push('/products')}
+              onClick={() => router.back()}
               style={{
                 padding: '12px 20px',
                 borderRadius: 8,
