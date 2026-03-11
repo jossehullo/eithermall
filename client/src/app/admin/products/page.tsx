@@ -31,11 +31,11 @@ export default function AdminProductsPage() {
 
   async function fetchProducts() {
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/products`, {
+      const { data } = await axios.get(`${API_BASE_URL}/products?limit=1000`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setProducts(data);
+      setProducts(data.products || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -212,6 +212,7 @@ export default function AdminProductsPage() {
       {/* ================= PAGINATION ================= */}
       {totalPages > 1 && (
         <div className="mt-8 flex justify-center gap-2 flex-wrap">
+          {/* PREV */}
           <button
             onClick={() => changePage(page - 1)}
             disabled={page === 1}
@@ -220,20 +221,22 @@ export default function AdminProductsPage() {
             Prev
           </button>
 
-          {Array.from({
-            length: totalPages,
-          }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => changePage(i + 1)}
-              className={`px-3 py-1 border rounded ${
-                page === i + 1 ? 'bg-gray-900 text-white' : ''
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {/* PAGE NUMBERS */}
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .slice(Math.max(0, page - 2), page + 1)
+            .map(p => (
+              <button
+                key={p}
+                onClick={() => changePage(p)}
+                className={`px-3 py-1 border rounded ${
+                  page === p ? 'bg-gray-900 text-white' : ''
+                }`}
+              >
+                {p}
+              </button>
+            ))}
 
+          {/* NEXT */}
           <button
             onClick={() => changePage(page + 1)}
             disabled={page === totalPages}
