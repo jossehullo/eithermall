@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { resolveImageUrl } from '@/lib/image';
 import { API_BASE_URL } from '@/lib/api';
+import { Suspense } from 'react';
 
 /* ======================= TYPES ======================= */
 
@@ -29,7 +30,7 @@ type Product = {
 
 const ITEMS_PER_PAGE = 8;
 
-export default function ProductsPage() {
+function ProductsPage() {
   const { addToCart } = useCart();
   const router = useRouter();
 
@@ -414,5 +415,12 @@ export default function ProductsPage() {
         </div>
       )}
     </div>
+  );
+}
+export default function Page() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40 }}>Loading products...</div>}>
+      <ProductsPage />
+    </Suspense>
   );
 }
