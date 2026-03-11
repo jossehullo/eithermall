@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { resolveImageUrl } from '@/lib/image';
 import { API_BASE_URL } from '@/lib/api';
@@ -30,6 +30,8 @@ type Product = {
 export default function ProductDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const page = searchParams.get('page') || 1;
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -190,7 +192,7 @@ export default function ProductDetailsPage() {
             </button>
 
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push(`/products?page=${page}`)}
               style={{
                 padding: '12px 20px',
                 borderRadius: 8,
