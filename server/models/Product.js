@@ -60,7 +60,8 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+/* 🚀 ADD THIS */
+productSchema.index({ createdAt: -1 });
 /**
  * Convert `units` expressed in packaging option `unitName` into base pieces.
  * - If packaging option not found, fallback: treat as pieces (1:1)
