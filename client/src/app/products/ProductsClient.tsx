@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { resolveImageUrl } from '@/lib/image';
@@ -25,15 +26,16 @@ type Product = {
   packagingOptions?: PackagingOption[];
 };
 
-const ITEMS_PER_PAGE = 8;
-
 export default function ProductsClient({ page }: { page: number }) {
   const { addToCart } = useCart();
   const router = useRouter();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
+
   const [sortBy, setSortBy] = useState<
     'default' | 'name-asc' | 'price-asc' | 'price-desc'
   >('default');
@@ -43,31 +45,30 @@ export default function ProductsClient({ page }: { page: number }) {
   const [selectedUom, setSelectedUom] = useState<PackagingOption | null>(null);
   const [qty, setQty] = useState(1);
 
-  /* ================= FETCH ================= */
+  /* ================= FETCH PRODUCTS ================= */
 
   useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/products`)
-      .then(res => setProducts(res.data || []))
-      .catch(() => setProducts([]));
-  }, []);
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/products?page=${page}&limit=8&search=${search}&category=${activeCategory}`
+        );
 
-  /* ================= FILTER ================= */
+        setProducts(res.data.products || []);
+        setTotalPages(res.data.totalPages || 1);
+      } catch {
+        setProducts([]);
+        setTotalPages(1);
+      }
+    };
 
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      const matchCategory = activeCategory === 'All' || p.category === activeCategory;
-
-      const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-
-      return matchCategory && matchSearch;
-    });
-  }, [products, activeCategory, search]);
+    fetchProducts();
+  }, [page, search, activeCategory]);
 
   /* ================= SORT ================= */
 
   const sortedProducts = useMemo(() => {
-    const list = [...filteredProducts];
+    const list = [...products];
 
     if (sortBy === 'name-asc') return list.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -86,16 +87,7 @@ export default function ProductsClient({ page }: { page: number }) {
       );
 
     return list;
-  }, [filteredProducts, sortBy]);
-
-  /* ================= PAGINATION ================= */
-
-  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
-
-  const paginatedProducts = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return sortedProducts.slice(start, start + ITEMS_PER_PAGE);
-  }, [sortedProducts, page]);
+  }, [products, sortBy]);
 
   /* ================= CATEGORIES ================= */
 
@@ -104,6 +96,31 @@ export default function ProductsClient({ page }: { page: number }) {
     products.forEach(p => p.category && set.add(p.category));
     return Array.from(set);
   }, [products]);
+
+  /* ================= PAGINATION LOGIC ================= */
+
+  const getVisiblePages = () => {
+    const pages: number[] = [];
+
+    let start = Math.max(1, page - 1);
+    let end = Math.min(totalPages, page + 1);
+
+    if (page <= 2) {
+      start = 1;
+      end = Math.min(3, totalPages);
+    }
+
+    if (page >= totalPages - 1) {
+      start = Math.max(1, totalPages - 2);
+      end = totalPages;
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
 
   /* ================= MODAL ================= */
 
@@ -156,7 +173,10 @@ export default function ProductsClient({ page }: { page: number }) {
       >
         <input
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => {
+            setSearch(e.target.value);
+            router.push(`/products?page=1`);
+          }}
           placeholder="Search products..."
           style={{
             flex: 1,
@@ -190,7 +210,10 @@ export default function ProductsClient({ page }: { page: number }) {
         {categories.map(cat => (
           <button
             key={cat}
-            onClick={() => setActiveCategory(cat)}
+            onClick={() => {
+              setActiveCategory(cat);
+              router.push(`/products?page=1`);
+            }}
             className={`px-4 py-2 rounded-full text-sm ${
               activeCategory === cat ? 'bg-yellow-400 text-black' : 'bg-white border'
             }`}
@@ -203,7 +226,7 @@ export default function ProductsClient({ page }: { page: number }) {
       {/* GRID */}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {paginatedProducts.map(product => (
+        {sortedProducts.map(product => (
           <div key={product._id} className="bg-white rounded-2xl p-4 shadow-md">
             <div className="w-full h-44 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
               <img
@@ -243,37 +266,35 @@ export default function ProductsClient({ page }: { page: number }) {
 
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-3 mt-10 flex-wrap">
-          {/* PREV */}
-          <button
-            disabled={page === 1}
-            onClick={() => router.push(`/products?page=${page - 1}`)}
-            className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 disabled:opacity-40"
-          >
-            ← Prev
-          </button>
+          <Link href={`/products?page=${page - 1}`} prefetch>
+            <button
+              disabled={page === 1}
+              className="px-4 py-2 rounded-lg border bg-white disabled:opacity-40"
+            >
+              ← Prev
+            </button>
+          </Link>
 
-          {/* PAGE NUMBERS */}
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .slice(Math.max(0, page - 2), page + 1)
-            .map(p => (
+          {getVisiblePages().map(p => (
+            <Link key={p} href={`/products?page=${p}`} prefetch>
               <button
-                key={p}
-                onClick={() => router.push(`/products?page=${p}`)}
-                className={`px-4 py-2 rounded-lg border font-semibold transition
-          ${p === page ? 'bg-black text-white border-black' : 'bg-white hover:bg-gray-100'}`}
+                className={`px-4 py-2 rounded-lg border font-semibold ${
+                  p === page ? 'bg-black text-white' : 'bg-white'
+                }`}
               >
                 {p}
               </button>
-            ))}
+            </Link>
+          ))}
 
-          {/* NEXT */}
-          <button
-            disabled={page === totalPages}
-            onClick={() => router.push(`/products?page=${page + 1}`)}
-            className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 disabled:opacity-40"
-          >
-            Next →
-          </button>
+          <Link href={`/products?page=${page + 1}`} prefetch>
+            <button
+              disabled={page === totalPages}
+              className="px-4 py-2 rounded-lg border bg-white disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </Link>
         </div>
       )}
 
@@ -297,9 +318,9 @@ export default function ProductsClient({ page }: { page: number }) {
             ))}
 
             <div className="flex justify-center gap-4 mt-4">
-              <button onClick={() => setQty(qty - 1)}>-</button>
+              <button onClick={() => qty > 1 && setQty(qty - 1)}>-</button>
               <strong>{qty}</strong>
-              <button onClick={() => setQty(qty + 1)}>+</button>
+              <button onClick={() => qty < maxQty && setQty(qty + 1)}>+</button>
             </div>
 
             <button

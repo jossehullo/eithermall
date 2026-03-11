@@ -13,11 +13,27 @@ router.get('/', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
 
+    const search = req.query.search || '';
+    const category = req.query.category || '';
+
+    const query = {};
+
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+
+    if (category && category !== 'All') {
+      query.category = category;
+    }
+
     const skip = (page - 1) * limit;
 
-    const products = await Product.find().sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const products = await Product.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    const totalProducts = await Product.countDocuments();
+    const totalProducts = await Product.countDocuments(query);
 
     res.json({
       products,
