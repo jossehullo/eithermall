@@ -125,7 +125,7 @@ export default function ProductsClient({ page }: { page: number }) {
   /* ================= MODAL ================= */
 
   function openUomModal(product: Product) {
-    if (!product.stock) return;
+    if (!product.stock || product.stock <= 0) return;
 
     setSelectedProduct(product);
     setSelectedUom(product.packagingOptions?.[0] ?? null);
@@ -238,17 +238,26 @@ export default function ProductsClient({ page }: { page: number }) {
 
             <h3 className="mt-3 font-semibold">{product.name}</h3>
 
-            <p className="text-red-600 font-bold mt-1">
-              From KSh{' '}
-              {(product.packagingOptions?.[0]?.price || product.price).toLocaleString()}
-            </p>
+            {(product.stock ?? 0) <= 0 ? (
+              <p className="text-red-600 font-bold mt-1">Out of Stock</p>
+            ) : (
+              <p className="text-red-600 font-bold mt-1">
+                From KSh{' '}
+                {(product.packagingOptions?.[0]?.price || product.price).toLocaleString()}
+              </p>
+            )}
 
             <div className="flex gap-2 mt-3">
               <button
                 onClick={() => openUomModal(product)}
-                className="flex-1 py-2 rounded-lg bg-black text-white"
+                disabled={(product.stock ?? 0) <= 0}
+                className={`flex-1 py-2 rounded-lg text-white ${
+                  (product.stock ?? 0) <= 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-black'
+                }`}
               >
-                Choose Unit
+                {(product.stock ?? 0) <= 0 ? 'Out of Stock' : 'Choose Unit'}
               </button>
 
               <button
@@ -305,17 +314,26 @@ export default function ProductsClient({ page }: { page: number }) {
           <div className="bg-white p-6 rounded-xl w-96">
             <h2>Choose Unit for {selectedProduct.name}</h2>
 
-            {selectedProduct.packagingOptions?.map(u => (
-              <div
-                key={u.name}
-                onClick={() => setSelectedUom(u)}
-                className={`p-3 border rounded mt-2 cursor-pointer ${
-                  selectedUom.name === u.name ? 'border-green-500' : ''
-                }`}
-              >
-                {u.name} — KSh {u.price}
-              </div>
-            ))}
+            {selectedProduct.packagingOptions?.map(u => {
+              const maxUnits = Math.floor((selectedProduct.stock ?? 0) / u.piecesPerUnit);
+
+              const disabled = maxUnits <= 0;
+
+              return (
+                <div
+                  key={u.name}
+                  onClick={() => !disabled && setSelectedUom(u)}
+                  className={`p-3 border rounded mt-2 ${
+                    disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+                  } ${selectedUom.name === u.name ? 'border-green-500' : ''}`}
+                >
+                  {u.name} — KSh {u.price}
+                  {disabled && (
+                    <span className="ml-2 text-red-500 text-sm">(Unavailable)</span>
+                  )}
+                </div>
+              );
+            })}
 
             <div className="flex justify-center gap-4 mt-4">
               <button onClick={() => qty > 1 && setQty(qty - 1)}>-</button>
