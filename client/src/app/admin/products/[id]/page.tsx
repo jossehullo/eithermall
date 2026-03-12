@@ -10,6 +10,18 @@ type PackagingRow = {
   piecesPerUnit: number;
   price: number;
 };
+const UOM_OPTIONS = [
+  'Pcs',
+  'Pkt',
+  'Dozen',
+  'Gross',
+  'Carton',
+  'Bale',
+  'Outer',
+  'Kg(s)',
+  'Pc(s)',
+  'Other',
+];
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -88,15 +100,15 @@ export default function EditProductPage() {
     setPackagingOptions(prev => {
       const copy = [...prev];
       copy[i] = { ...copy[i], ...patch };
-      return copy.sort((a, b) => a.piecesPerUnit - b.piecesPerUnit);
+
+      return copy
+        .filter(p => p.name) // remove empty rows
+        .sort((a, b) => a.piecesPerUnit - b.piecesPerUnit);
     });
   }
 
   function addUOM() {
-    setPackagingOptions(prev => [
-      ...prev,
-      { name: 'New Unit', piecesPerUnit: 1, price: 0 },
-    ]);
+    setPackagingOptions(prev => [...prev, { name: 'Pcs', piecesPerUnit: 1, price: 0 }]);
   }
 
   function deleteUOM(index: number) {
@@ -209,7 +221,7 @@ export default function EditProductPage() {
             <input
               type="number"
               style={inputStyle}
-              value={form.stock === 0 ? '' : form.stock}
+              value={form.stock}
               onChange={e =>
                 setForm({
                   ...form,
@@ -278,20 +290,29 @@ export default function EditProductPage() {
                 marginBottom: 12,
               }}
             >
-              <input
+              <select
                 style={inputStyle}
                 value={row.name}
                 onChange={e => updateRow(i, { name: e.target.value })}
-                placeholder="Unit Name"
-              />
+              >
+                <option value="">Select Unit</option>
+
+                {UOM_OPTIONS.filter(
+                  u => !packagingOptions.some((p, idx) => p.name === u && idx !== i)
+                ).map(u => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
 
               <input
                 type="number"
                 style={inputStyle}
-                value={row.piecesPerUnit}
+                value={row.piecesPerUnit === 0 ? '' : row.piecesPerUnit}
                 onChange={e =>
                   updateRow(i, {
-                    piecesPerUnit: Number(e.target.value),
+                    piecesPerUnit: e.target.value === '' ? 0 : Number(e.target.value),
                   })
                 }
                 placeholder="Pieces per unit"
@@ -300,10 +321,10 @@ export default function EditProductPage() {
               <input
                 type="number"
                 style={inputStyle}
-                value={row.price}
+                value={row.price === 0 ? '' : row.price}
                 onChange={e =>
                   updateRow(i, {
-                    price: Number(e.target.value),
+                    price: e.target.value === '' ? 0 : Number(e.target.value),
                   })
                 }
                 placeholder="Price"
