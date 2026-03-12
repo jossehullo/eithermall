@@ -31,9 +31,10 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ message: 'No order items' });
     }
 
-    // Deduct stock
+    // Validate stock only (do not deduct yet)
     for (const item of items) {
       const product = await Product.findById(item.productId || item._id);
+
       if (!product) {
         return res.status(400).json({ message: 'Product not found' });
       }
@@ -45,9 +46,6 @@ router.post('/', protect, async (req, res) => {
           message: `Insufficient stock for ${product.name}`,
         });
       }
-
-      product.stock -= requiredStock;
-      await product.save();
     }
 
     const order = await Order.create({
@@ -130,13 +128,37 @@ router.patch('/:id/status', protect, adminOnly, async (req, res) => {
       });
     }
 
-    order.status = status;
+    // ✅ STOCK DEDUCTION ONLY WHEN: pending → paid
+    if (order.status === 'pending' && status === 'paid') {
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId || item._id);
 
-    if (status === 'paid' && paymentReference) {
-      order.paymentReference = paymentReference;
+        if (!product) continue;
+
+        const requiredStock = (item.qty || 0) * (item.piecesPerUnit || 1);
+
+        if (product.stock < requiredStock) {
+          return res.status(400).json({
+            message: `Insufficient stock for ${product.name}`,
+          });
+        }
+
+        product.stock -= requiredStock;
+
+        console.log(`Deducted ${requiredStock} units from ${product.name}`);
+
+        await product.save();
+      }
+
+      if (paymentReference) {
+        order.paymentReference = paymentReference;
+      }
     }
 
+    order.status = status;
+
     await order.save();
+
     res.json(order);
   } catch (err) {
     console.error('Update order status error:', err);
@@ -161,15 +183,10 @@ router.patch('/:id/cancel', protect, adminOnly, async (req, res) => {
       });
     }
 
-    // Restore stock
-    for (const item of order.items) {
-      const product = await Product.findById(item.productId);
-      if (product) {
-        const restoreQty = (item.qty || 0) * (item.piecesPerUnit || 1);
-        product.stock += restoreQty;
-        await product.save();
-      }
-    }
+    // Stock is only deducted when order is PAID
+    // Pending orders do not affect inventory
+
+    console.log(`Order ${order._id} cancelled`);
 
     order.status = 'cancelled';
     await order.save();
